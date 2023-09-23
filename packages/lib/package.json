@@ -1,0 +1,23 @@
+{
+  "name": "@romanzy/i18n",
+  "private": false,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest --watch"
+  },
+  "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "^2.6.1",
+    "@types/node": "^20.5.9",
+    "@vitest/coverage-v8": "^0.34.4",
+    "@vitest/ui": "^0.34.4",
+    "intl-messageformat": "^10.5.1",
+    "typescript": "^5.2.2",
+    "vite": "^4.4.5",
+    "vitest": "^0.32.2"
+  }
+}

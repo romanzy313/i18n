@@ -1,0 +1,17 @@
+<script lang="ts">
+	export function entries() {
+		return [{ locale: 'en' }, { locale: 'ru' }];
+	}
+</script>
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>
