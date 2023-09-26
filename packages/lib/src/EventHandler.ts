@@ -44,23 +44,20 @@ export class I18nEventHandler {
       return value as string;
     } else if (type == "translationNotFound")
       // @ts-expect-error // ugh
-      return value.fullyResolvedPath;
+      return `not_found:${value.fullyResolvedPath}`;
     else if (type == "loadFailure")
       // @ts-expect-error // ugh
       return `${value.operation}_${value.targetObj}`;
     else if (type == "badLocale")
       // @ts-expect-error // ugh
-      return `${value.locale}`;
+      return `bad_locale:${value.locale}`;
 
     return null;
   }
 
   notFoundEvent(value: Parameters<I18nEvents["translationNotFound"]>[0]) {
-    // separate
-
+    // this is bad as we log too much
     const result = this.handler.translationNotFound(value);
-
-    // this.eventCache.ad
 
     return result;
   }
@@ -80,11 +77,14 @@ export class I18nEventHandler {
 
     if (this.eventCache.has(cacheKey)) return;
 
+    console.log("handling event with cache key", cacheKey);
+
+    // the handler below deals with all sideeffects (for now its hardcoded to log)
+
     // @ts-expect-error
     this.handler[type](value);
 
     // like doing a console log
-
     this.eventCache.add(cacheKey);
   }
 

@@ -142,6 +142,8 @@ const defaultEvents: I18nEvents = {
       o.reason
     );
   },
+  // this should not return a value
+  // this is just a sideeffect
   translationNotFound: (o) => {
     console.log("Translation", o.fullyResolvedPath, "not found");
 
@@ -351,7 +353,7 @@ class I18nChain<T extends GenericGeneratedType> {
         namespace: [], // TODO,
         fullyResolvedPath: fullyQuantified,
       });
-      console.warn(`Translation not found: "${fullyQuantified}".`);
+      // console.warn(`Translation not found: "${fullyQuantified}".`);
 
       // this is done via log
       // log returns the data too?

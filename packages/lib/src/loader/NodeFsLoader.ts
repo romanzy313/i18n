@@ -1,18 +1,17 @@
 import { BaseLoader, ListResult } from "./BaseLoader";
 import path from "path";
 import fs from "fs/promises";
-import { InterpolatePathFn, makePathInterpolator } from "../internalUtils";
-import { I18nRuntime } from "..";
+import {
+  InterpolatePathFn,
+  makeMinDeinterpolator,
+  makePathInterpolator,
+} from "../internalUtils";
 import { I18nError } from "../I18nError";
 
 export type NodeFsLoaderOptions = {
   rootPath?: string;
-  template: string;
-};
-
-type ResolvedOpts = {
-  rootPath: string;
-  pathFormater: () => {};
+  // root path is the template!
+  folder: string;
 };
 
 /**
@@ -42,19 +41,7 @@ const safePathJoin = function (safeBase: string, ...rest: string[]) {
 export default class NodeFsLoader extends BaseLoader {
   private rootDir: string;
   private formatPath: InterpolatePathFn;
-  private template: string;
-
-  // this needs access to runtime
-
-  // initRuntime(runtime: I18nRuntime) {
-  //   this.runtime = runtime;
-  // }
-
-  // runtime initialize fn then
-  // so that i can provide with extension
-
-  // need runtime injection
-  // how do I know file formats from here
+  private folder: string;
 
   constructor(opts: NodeFsLoaderOptions) {
     super();
@@ -62,11 +49,11 @@ export default class NodeFsLoader extends BaseLoader {
     this.rootDir = opts.rootPath || process.env.PWD!;
     if (!this.rootDir) throw new Error("invalid rootPath");
 
-    this.template = opts.template;
-    this.formatPath = makePathInterpolator(opts.template, "/");
+    this.folder = opts.folder;
+    // TODO do i need to include the root dir here?
+    this.formatPath = makePathInterpolator(opts.folder, "/");
   }
 
-  // this can throw standard error, locale: string, namespace: string[], fullInput: string
   async load(
     locale: string,
     namespace: string[],
@@ -94,27 +81,22 @@ export default class NodeFsLoader extends BaseLoader {
   }
 
   async list(): Promise<ListResult[]> {
-    const res = await fs.readdir(this.rootDir);
-    // now need to parse it, for now just keep it simple, assume lang is first
-    // in real version need to use template to generate recoupler + deslasher
+    // const deinterp = makePathDeinterpolator(this.folder, "/");
+    const deinterp = makeMinDeinterpolator("/");
 
-    const results: ListResult[] = res.map((v) => {
-      // first need to remove rootDir
-      // for now its this '/locale/{lng}/{ns}.json'
-      const filtered = v
-        .substring(this.rootDir.length + "/locale/".length)
-        .replace(".json", ""); // TODO remove extension!
+    const actualPath = safePathJoin(this.rootDir, this.folder);
 
-      this.template; // TODO use the template
-      const parts = filtered.split("/");
-      const locale = parts.splice(0, 1)[0];
-      const namespace = parts;
-
-      return {
-        locale,
-        namespace,
-      };
+    const res = await fs.readdir(actualPath, {
+      recursive: true,
     });
-    return results;
+
+    const output: ListResult[] = [];
+
+    res.forEach((v) => {
+      const parsed = deinterp(v);
+      if (parsed && parsed.extension) output.push(parsed);
+    });
+
+    return output;
   }
 }
