@@ -88,6 +88,10 @@ beforeEach(() => {
     }),
     formatter: new ICUFormatter(),
     parser: new JsonParser(),
+    formatNotFound: () => "not found",
+    events: {
+      translationNotFound: () => {}, // remove console logging of missing translations
+    },
   });
 });
 

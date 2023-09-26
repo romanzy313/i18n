@@ -1,33 +1,16 @@
 // this is the core class
 
+import { GenericGeneratedType } from ".";
 import {
-  ErrorArgs,
-  GenericGeneratedType,
-  NestedRawTranslations,
-  TArgs,
-} from ".";
-import Cache from "./Cache";
-import { I18nEventHandler, I18nEventOptions, I18nEvents } from "./EventHandler";
+  I18nEventHandler,
+  I18nEventOptions,
+  I18nEvents,
+  NotFoundArgs,
+} from "./EventHandler";
 import { I18nError } from "./I18nError";
 import { BaseFormatter, FormatTranslation } from "./formatter/BaseFormatter";
-import { BaseLoader, LoadResult } from "./loader/BaseLoader";
+import { BaseLoader } from "./loader/BaseLoader";
 import BaseParser from "./parser/BaseParser";
-
-// import { I18nOpts } from ".";
-
-// I want something to talk about levels
-
-type DebugArg =
-  | {
-      info?: boolean | ((...any: any[]) => void);
-      warn?: boolean | ((...any: any[]) => void);
-      error?: boolean | ((...any: any[]) => void);
-    }
-  | boolean;
-
-// different optionalities
-// inner one always gives the needed values
-// just a type difference between them
 
 // cache is its own class
 export type I18nRuntime = {
@@ -36,20 +19,10 @@ export type I18nRuntime = {
   parser: BaseParser;
   formatter: BaseFormatter;
   eventHandler: I18nEventHandler;
-
-  // triggerEvent:
-  //   | {
-  //       onNotFound?: (args: ErrorArgs) => string;
-  //       // when actual error happens, how to format it. This is used together with the debug functionality
-  //     }
-  //   | any;
   loading: Map<string, Promise<boolean>>;
   loaded: Set<string>; //
   eventCache: Set<string>;
-  // other opts like failed to load or etc...
-
-  // format opts here
-  // formatLog?: (args: ErrorArgs) => string | null;
+  formatNotFound: (args: NotFoundArgs) => string;
 };
 
 export type InnerI18nOpts = {
@@ -66,25 +39,27 @@ export type InnerI18nOpts = {
 };
 
 export type I18nOpts = {
-  /** Namespace to use if no namespace is provided */
   locales: string[];
-
   fallbackLocale: string;
+  loader: BaseLoader;
+  parser: BaseParser;
+  formatter: BaseFormatter;
 
-  // what to initialize this. if not provided fallback locale is used
+  // what to initialize current instance to. if not provided fallback locale is used
   currentLocale?: string;
 
-  // various formatter things with good default
+  // various formatter things with good defaults
   nsSeparator?: string;
   keySeparator?: string;
   startDelimiter?: string;
   endDelimiter?: string;
+
+  // custom handling of events
   events?: I18nEventOptions;
+
+  formatNotFound?: (args: NotFoundArgs) => string;
+
   // we load them with loader
-  loader: BaseLoader;
-  parser: BaseParser;
-  // like this, use this https://formatjs.io/docs/icu-messageformat-parser
-  formatter: BaseFormatter;
 
   // backend?: BackendObj;
 
@@ -203,10 +178,6 @@ class I18nChain<T extends GenericGeneratedType> {
       key,
       namespace,
     };
-  }
-
-  private processEvent(name: string, value: any) {
-    // this will do event processing, pretty important
   }
 
   private getTranslationCacheKey(locale: string, fullNamespace: string[]) {
@@ -348,18 +319,13 @@ class I18nChain<T extends GenericGeneratedType> {
 
       // error, not found or not loaded
       // which one is it?
-      this.runtime.eventHandler.handleEvent("translationNotFound", {
+      const args = {
         locale: this.locale,
         namespace: [], // TODO,
         fullyResolvedPath: fullyQuantified,
-      });
-      // console.warn(`Translation not found: "${fullyQuantified}".`);
-
-      // this is done via log
-      // log returns the data too?
-      // return this.runtime.log
-
-      return "not found"; // with a formatter
+      };
+      this.runtime.eventHandler.handleEvent("translationNotFound", args);
+      return this.runtime.formatNotFound(args);
     }
 
     return translateFn(args || ({} as any));
@@ -456,6 +422,8 @@ export class I18nInstance<
       loading: new Map(),
       loaded: new Set(),
       eventCache: new Set(),
+      formatNotFound:
+        opts.formatNotFound || (({ fullyResolvedPath }) => fullyResolvedPath),
     };
 
     // runtime.loader.init(innerOpts, runtime); // bad circular dependencies?

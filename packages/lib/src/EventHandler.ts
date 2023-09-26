@@ -1,18 +1,19 @@
 import { I18nError } from "./I18nError";
 
+export interface NotFoundArgs {
+  locale: string;
+  namespace: string[];
+  fullyResolvedPath: string;
+}
+
 export interface I18nEvents {
-  translationNotFound: (opts: {
-    // message?: string;
-    locale: string;
-    namespace: string[];
-    fullyResolvedPath: string; // actual formatted path goes in here
-  }) => string; // return the formatted value
-  loadFailure: (opts: {
+  translationNotFound: (args: NotFoundArgs) => void; // return the formatted value
+  loadFailure: (args: {
     targetObj: string;
     operation: "load" | "parse" | "format"; // where the error happened
     reason?: string; // more explanation if needed
   }) => void;
-  badLocale: (opts: { locale: string }) => void;
+  badLocale: (args: { locale: string }) => void;
   error: (message: string) => void;
   warning: (message: string) => void;
   debug: (message: string) => void;
@@ -28,9 +29,8 @@ export type I18nEventOptions = Partial<{
 export class I18nEventHandler {
   // have defaults in here
   public eventCache = new Set<string>();
-  // and give it how it is supposed to be handled
 
-  // protected runtime: I18nRuntime,
+  // , private notFoundFormatter: (args: NotFoundArgs) => string
   constructor(private handler: I18nEvents) {}
 
   // this can have its own set
@@ -54,14 +54,6 @@ export class I18nEventHandler {
 
     return null;
   }
-
-  notFoundEvent(value: Parameters<I18nEvents["translationNotFound"]>[0]) {
-    // this is bad as we log too much
-    const result = this.handler.translationNotFound(value);
-
-    return result;
-  }
-
   //   handleEvent<Type extends keyof I18nEvents>(tt: inferType<Type>) {
   handleEvent<Key extends keyof I18nEvents>(
     type: Key,
@@ -77,10 +69,9 @@ export class I18nEventHandler {
 
     if (this.eventCache.has(cacheKey)) return;
 
-    console.log("handling event with cache key", cacheKey);
+    // console.log("handling event with cache key", cacheKey);
 
-    // the handler below deals with all sideeffects (for now its hardcoded to log)
-
+    // the handler below deals with all sideeffects, by default hardcoded to console.logs
     // @ts-expect-error
     this.handler[type](value);
 
