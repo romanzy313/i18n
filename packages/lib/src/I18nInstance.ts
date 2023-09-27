@@ -11,6 +11,7 @@ import { I18nError } from "./I18nError";
 import { BaseFormatter, FormatTranslation } from "./formatter/BaseFormatter";
 import { BaseLoader } from "./loader/BaseLoader";
 import BaseParser from "./parser/BaseParser";
+import { PathnameUtls } from "./utils/PathnameUtils";
 
 // cache is its own class
 export type I18nRuntime = {
@@ -23,6 +24,8 @@ export type I18nRuntime = {
   loaded: Set<string>; //
   eventCache: Set<string>;
   formatNotFound: (args: NotFoundArgs) => string;
+  translateFns: Map<string, FormatTranslation>;
+  utils: PathnameUtls;
 };
 
 export type InnerI18nOpts = {
@@ -44,6 +47,8 @@ export type I18nOpts = {
   loader: BaseLoader;
   parser: BaseParser;
   formatter: BaseFormatter;
+
+  utils?: PathnameUtls;
 
   // what to initialize current instance to. if not provided fallback locale is used
   currentLocale?: string;
@@ -74,14 +79,6 @@ export type I18nOpts = {
   // default true. will only run one instance of the caching
   singleton?: boolean;
 };
-
-//
-// export type GetI18nOpts = {
-//   locale?: string;
-//   namespace?: string; // like enter subnamespaces, can use ../ to go up... use path for this... like instead of :
-//   // so it can be /anketa/forms
-//   // or forms
-// };
 
 function processOpts(opts: I18nOpts): InnerI18nOpts {
   const locale = opts.locales.includes(opts.currentLocale || "")
@@ -133,15 +130,27 @@ function processEventOpts(eventOpts?: I18nEventOptions): I18nEvents {
   };
 }
 
-class I18nChain<T extends GenericGeneratedType> {
+// TODO publically exposed scopes need to remove internal public fields from types
+export type I18nScope<T extends GenericGeneratedType> = Omit<
+  I18nChain<T>,
+  "opts" | "runtime"
+>;
+
+export class I18nChain<T extends GenericGeneratedType> {
   public opts: InnerI18nOpts; // public for now
   public runtime: I18nRuntime; // public for now
 
-  private translateFns = new Map<string, FormatTranslation>();
+  // private translateFns =
 
   constructor(opts: InnerI18nOpts, runtime: I18nRuntime) {
     this.opts = opts;
     this.runtime = runtime;
+  }
+
+  // helper functions exposed here
+  public getLink(url: string) {
+    //
+    return this.runtime.utils.getLink(this.locale, url);
   }
 
   get locale(): string {
@@ -150,6 +159,10 @@ class I18nChain<T extends GenericGeneratedType> {
 
   get currentNamespace(): string {
     return this.opts.namespace.join(this.opts.nsSeparator);
+  }
+
+  get otherLocales(): string[] {
+    return this.opts.locales.filter((v) => v !== this.opts.locale);
   }
 
   public parseUserInputKey(input: string): {
@@ -184,11 +197,13 @@ class I18nChain<T extends GenericGeneratedType> {
     return `${locale}_${fullNamespace.join(":")}`;
   }
 
-  private getSafeLocale(locale: string) {
-    const isOk = this.opts.locales.includes(locale);
+  public getSafeLocale(locale: string | undefined | null) {
+    const isOk = locale && this.opts.locales.includes(locale);
     if (!isOk) {
       // error event
-      console.warn(`Language ${locale} is not supported.`);
+      this.runtime.eventHandler.handleEvent("badLocale", {
+        locale: locale || "undefined",
+      });
     }
     return isOk ? locale : this.opts.fallbackLocale;
   }
@@ -229,7 +244,7 @@ class I18nChain<T extends GenericGeneratedType> {
           parentKey +
           key;
         const value = obj[key];
-        this.translateFns.set(
+        this.runtime.translateFns.set(
           fullKey,
           this.runtime.formatter.format(value, locale)
         );
@@ -247,14 +262,8 @@ class I18nChain<T extends GenericGeneratedType> {
     const cacheKey = this.getTranslationCacheKey(locale, fullNamespace);
 
     if (this.runtime.loading.has(cacheKey)) {
-      // return its completion result
       return this.runtime.loading.get(cacheKey)!;
     }
-    // if (this.runtime.loader.loaded)
-    // const locale = this.opts.locale;
-    // const namespace = relativeNamespace.split(this.opts.nsSeparator); // namespace here is absolute!
-
-    // loader throws for the error
 
     const loadPromise = new Promise<boolean>((resolve) => {
       this.runtime.loader
@@ -275,11 +284,10 @@ class I18nChain<T extends GenericGeneratedType> {
           this.runtime.loaded.add(cacheKey); // add it to loaded, just for now
           resolve(true);
         })
-        // it will never throw
-        // but it would be nice if modules can return errors!
+
         .catch((err: any) => {
           // log that it fails
-
+          this.runtime.eventHandler.handleError(err);
           console.error("failed to load translation", err); // but could also fails in addTranslationFunctions
 
           resolve(false);
@@ -313,8 +321,15 @@ class I18nChain<T extends GenericGeneratedType> {
     const cacheKey = this.locale + "_" + fullyQuantified;
 
     // console.log("getting full value of ", fullyQuantified, this.translateFns);
-    const translateFn = this.translateFns.get(cacheKey);
+    const translateFn = this.runtime.translateFns.get(cacheKey);
     if (!translateFn) {
+      console.log(
+        "no translation function in",
+        this.runtime.translateFns,
+        "with key",
+        cacheKey
+      );
+
       // in async version we will try to load it
 
       // error, not found or not loaded
@@ -358,10 +373,13 @@ class I18nChain<T extends GenericGeneratedType> {
 
   // loads the current namespace
   public async loadRootScopeTranslation() {
-    if (!this.opts.namespace)
-      throw new Error(
+    if (!this.opts.namespace) {
+      this.runtime.eventHandler.handleEvent(
+        "error",
         "Must be inside a namespace to load own root scope translation."
       );
+      return;
+    }
 
     const loadRes = await this.loadSingleTranslation(
       this.locale,
@@ -374,17 +392,17 @@ class I18nChain<T extends GenericGeneratedType> {
   }
 
   public getSubI18n<Key extends keyof T["n"]>(opts: {
-    locale: string;
+    locale: string | undefined | null;
     namespace: Key;
   }): I18nChain<T["n"][typeof opts.namespace]>;
   public getSubI18n<Key extends keyof T["n"]>(opts: {
     namespace: Key;
   }): I18nChain<T["n"][typeof opts.namespace]>;
   public getSubI18n<Key extends keyof T["n"]>(opts: {
-    locale: string;
+    locale: string | undefined | null;
   }): I18nChain<T>;
   public getSubI18n<Key extends keyof T["n"]>(opts: {
-    locale?: string;
+    locale?: string | undefined | null;
     namespace?: Key;
   }) {
     // const optsCopy = { ...this.opts };
@@ -407,6 +425,9 @@ class I18nChain<T extends GenericGeneratedType> {
   }
 }
 
+// const s: I18nScope<any> = new I18nChain<any>({} as any, {} as any);
+
+// s.
 export class I18nInstance<
   T extends GenericGeneratedType = GenericGeneratedType
 > extends I18nChain<T> {
@@ -424,6 +445,8 @@ export class I18nInstance<
       eventCache: new Set(),
       formatNotFound:
         opts.formatNotFound || (({ fullyResolvedPath }) => fullyResolvedPath),
+      utils: opts.utils || new PathnameUtls(),
+      translateFns: new Map<string, FormatTranslation>(),
     };
 
     // runtime.loader.init(innerOpts, runtime); // bad circular dependencies?

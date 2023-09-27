@@ -75,14 +75,16 @@ export class I18nEventHandler {
     // @ts-expect-error
     this.handler[type](value);
 
-    // like doing a console log
     this.eventCache.add(cacheKey);
   }
 
   handleError(err: I18nError) {
     const cacheKey = this.getCacheKey(err.type, err.data);
 
-    if (!cacheKey) throw new Error("cannot handle event, more info TODO"); // TODO
+    if (!cacheKey) {
+      console.log("unknown error", err);
+      return;
+    }
 
     if (this.eventCache.has(cacheKey)) return;
     // @ts-expect-error

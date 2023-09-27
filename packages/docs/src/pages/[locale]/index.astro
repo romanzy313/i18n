@@ -1,0 +1,22 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+export async function getStaticPaths() {
+  return [{ params: { locale: "en" } }, { params: { locale: "ru" } }];
+}
+
+const i18n = Astro.locals.i18n;
+
+const ns = i18n.getSubI18n({
+  namespace: "landing",
+});
+
+// load the landing namespace translation
+await ns.loadRootScopeTranslation();
+---
+
+<Layout title={ns.t("title")}>
+  <main>
+    <div>{ns.t("welcome")}</div>
+  </main>
+</Layout>

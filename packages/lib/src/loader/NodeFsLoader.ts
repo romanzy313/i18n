@@ -64,8 +64,12 @@ export default class NodeFsLoader extends BaseLoader {
     try {
       const completePath = safePathJoin(this.rootDir, relativePath);
       const rawContent = await fs.readFile(completePath, "utf8");
-      const content = JSON.parse(rawContent);
-      return content;
+      // const content = JSON.parse(rawContent);
+
+      // console.log("got loader content", content);
+
+      // return content;
+      return rawContent;
 
       // return content;
     } catch (err: any) {

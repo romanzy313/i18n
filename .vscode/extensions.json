@@ -2,13 +2,10 @@
   "recommendations": [
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
-    "eamodio.gitlens",
-    "rangav.vscode-thunder-client",
     "astro-build.astro-vscode",
     "svelte.svelte-vscode",
     "gruntfuggly.todo-tree",
-    "usernamehw.errorlens",
-    "prisma.prisma"
+    "usernamehw.errorlens"
   ],
   "unwantedRecommendations": []
 }
