@@ -153,19 +153,27 @@ export class I18nChain<T extends GenericGeneratedType> {
     return this.runtime.utils.getLink(this.locale, url);
   }
 
+  // opts accesser
+  get fallbackLocale(): string {
+    return this.opts.fallbackLocale;
+  }
   get locale(): string {
     return this.opts.locale;
   }
-
-  get currentNamespace(): string {
-    return this.opts.namespace.join(this.opts.nsSeparator);
+  get allLocales(): string[] {
+    return this.opts.locales;
   }
-
   get otherLocales(): string[] {
     return this.opts.locales.filter((v) => v !== this.opts.locale);
   }
+  get namespace(): string {
+    return this.opts.namespace.join(this.opts.nsSeparator);
+  }
+  get namespaceArray(): string[] {
+    return this.opts.namespace;
+  }
 
-  public parseUserInputKey(input: string): {
+  private parseUserInputKey(input: string): {
     key: string[];
     namespace: string[];
   } {
@@ -474,8 +482,6 @@ export class I18nInstance<
     const res = await Promise.all(promises);
 
     return res.every((v) => v == true);
-
-    // now load them all
   }
 
   attachToCli() {

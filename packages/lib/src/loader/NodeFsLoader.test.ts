@@ -9,7 +9,7 @@ describe("Node Fs Loader", () => {
 
     const res = await loader.load("en", ["default"], "json");
 
-    expect(res).toBe("testing");
+    expect(res).toBe(`testing`);
   });
 
   test("lists correctly", async () => {

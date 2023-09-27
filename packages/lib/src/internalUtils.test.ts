@@ -1,12 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { makeMinDeinterpolator, makePathDeinterpolator } from "./internalUtils";
 
-// import { I18nInstance } from "./I18nInstance";
-// import MemLoader from "./loader/MemLoader";
-// import ICUFormatter from "./formatter/ICUFormatter";
-// import JsonParser from "./parser/JsonParser";
-// import { CompositeKeyDef, GenericGeneratedType } from ".";
-
 describe("internal utils", () => {
   test("path deinterpolator with extension", () => {
     const template = "public/locale";
@@ -68,15 +62,3 @@ describe("internal utils", () => {
     });
   });
 });
-
-// if (match) {
-//   console.log("MATCH RESULT IS", match);
-
-//   console.log("Matched variables:");
-
-//   variableNames.forEach((name, index) => {
-//     console.log(`${name}: ${match[index + 1]}`);
-//   });
-// } else {
-//   console.log("No match found.");
-// }
