@@ -107,8 +107,14 @@ export default class I18nCli {
 
     const raw = await this.instance.runtime.loader.load(
       item.locale,
-      item.namespace
+      item.namespace,
+      item.extension
     );
+    if (raw instanceof Error) {
+      console.error("failed to load item", raw);
+      throw raw;
+      // throw new Error("");
+    }
     const parsed = this.instance.runtime.parser.parse(raw);
     console.log("got load res", parsed);
 
@@ -188,39 +194,4 @@ export default class I18nCli {
 
     await fs.writeFile(dest, value);
   }
-}
-
-function makeCliTool(instance: I18nInstance, argv?: string[]) {
-  // load all instanrs
-
-  async function run() {
-    const items = await instance.runtime.loader.list();
-
-    // force load all of them + check
-
-    // this automatically does error handling
-    // amount of logs are counted and they are all saved actually for deduping
-    // so that this can access it
-
-    // now how do we store extra information regarding and error?
-    // instance.processor.loadAndProcess(items["one"]["then two"]);
-  }
-
-  // output to cli, no libs, just simple formatted output
-
-  async function watch() {
-    // do watch things
-  }
-
-  function processArgv() {
-    if (true) watch();
-  }
-
-  return {
-    run,
-  };
-  // instance.
-  // this will do everything!
-
-  // instance.
 }

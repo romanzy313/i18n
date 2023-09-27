@@ -1,21 +1,24 @@
-import { CompositeKeyDef, GenericGeneratedType, TArgs } from "..";
+import { CompositeKeyDef, GenericGeneratedType } from "..";
 
-type Ns1Def = {
-  hello: {
-    name: string;
-  };
-  world: {};
-};
 type Ns2Def = {
   sup: {};
 };
 
-type Ns1StrObj<Key extends keyof Ns1Def = keyof Ns1Def> = {
-  [key in `ns1:${Key}`]: Ns1Def[Key];
-};
 type Ns1Ns2StrObj<Key extends keyof Ns2Def = keyof Ns2Def> = {
   [key in `ns1:ns2:${Key}`]: Ns2Def[Key];
 };
+
+// type Ns1Def = {
+//   hello: {
+//     name: string;
+//   };
+//   world: {};
+// };
+// type Ns1StrObj<Key extends keyof Ns1Def = keyof Ns1Def> = {
+//   [key in `ns1:${Key}`]: Ns1Def[Key];
+// };
+
+// this replaces code above, but better not, i can genearte them
 type Auto1 = CompositeKeyDef<
   "ns1",
   {

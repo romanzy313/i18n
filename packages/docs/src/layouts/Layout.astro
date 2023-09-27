@@ -6,10 +6,11 @@ interface Props {
 }
 
 const { title } = Astro.props;
+const { i18n } = Astro.locals;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={i18n.locale} dir={i18n.dir}>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content="Astro description" />

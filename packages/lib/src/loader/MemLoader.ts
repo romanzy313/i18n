@@ -73,6 +73,7 @@ export default class MemLoader extends BaseLoader {
         results.push({
           locale,
           namespace,
+          extension: "",
           // need opts of the loader here, just return a path ()
         });
       });

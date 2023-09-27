@@ -1,0 +1,8 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "out": "./typedoc",
+  "entryPoints": ["packages/*"],
+  "name": "i18n Library Docs",
+  "entryPointStrategy": "packages",
+  "includeVersion": true
+}

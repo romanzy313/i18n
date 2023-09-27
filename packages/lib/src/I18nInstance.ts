@@ -160,6 +160,13 @@ export class I18nChain<T extends GenericGeneratedType> {
   get locale(): string {
     return this.opts.locale;
   }
+  get dir(): string {
+    // TODO this is not complete
+
+    if (this.opts.locale == "ar") return "rtl";
+
+    return "lrt";
+  }
   get allLocales(): string[] {
     return this.opts.locales;
   }
@@ -171,34 +178,6 @@ export class I18nChain<T extends GenericGeneratedType> {
   }
   get namespaceArray(): string[] {
     return this.opts.namespace;
-  }
-
-  private parseUserInputKey(input: string): {
-    key: string[];
-    namespace: string[];
-  } {
-    // extract the namespace
-
-    const namespace = [...this.opts.namespace];
-
-    const namespacePos = input.lastIndexOf(this.opts.nsSeparator);
-
-    if (namespacePos != -1) {
-      // meaning there are namespaces before it
-      const namespaceStr = input.substring(0, namespacePos);
-      namespaceStr.split(this.opts.nsSeparator).forEach((v) => {
-        namespace.push(v);
-      });
-    }
-    const keyStr =
-      namespacePos == -1 ? input : input.substring(namespacePos + 1);
-
-    const key = keyStr.split(this.opts.keySeparator);
-
-    return {
-      key,
-      namespace,
-    };
   }
 
   private getTranslationCacheKey(locale: string, fullNamespace: string[]) {
@@ -328,20 +307,9 @@ export class I18nChain<T extends GenericGeneratedType> {
 
     const cacheKey = this.locale + "_" + fullyQuantified;
 
-    // console.log("getting full value of ", fullyQuantified, this.translateFns);
     const translateFn = this.runtime.translateFns.get(cacheKey);
+
     if (!translateFn) {
-      console.log(
-        "no translation function in",
-        this.runtime.translateFns,
-        "with key",
-        cacheKey
-      );
-
-      // in async version we will try to load it
-
-      // error, not found or not loaded
-      // which one is it?
       const args = {
         locale: this.locale,
         namespace: [], // TODO,

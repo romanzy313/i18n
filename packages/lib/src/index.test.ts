@@ -96,23 +96,13 @@ beforeEach(() => {
 });
 
 describe("i18n", () => {
-  test("parses user input", () => {
-    // @ts-expect-error for now accessing private methods
-    expect(i18n.parseUserInputKey("hello:world.subkey")).toEqual({
-      key: ["world", "subkey"],
-      namespace: ["hello"],
-    });
-    // @ts-expect-error for now accessing private methods
-    expect(i18n.parseUserInputKey("world.subkey")).toEqual({
-      key: ["world", "subkey"],
-      namespace: [],
-    });
-  });
   test("memloader lists properly", async () => {
     const res = await i18n.runtime.loader.list();
 
     expect(res.length).toBe(4);
+
     expect(res).toContainEqual({
+      extension: "",
       locale: "en",
       namespace: ["hello", "nested"],
     });

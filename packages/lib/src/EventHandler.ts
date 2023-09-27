@@ -78,8 +78,15 @@ export class I18nEventHandler {
     this.eventCache.add(cacheKey);
   }
 
-  handleError(err: I18nError) {
-    const cacheKey = this.getCacheKey(err.type, err.data);
+  handleError(err: I18nError | Error) {
+    if (err.name !== "I18nError") {
+      this.handler.error(err.message);
+      return;
+    }
+    const cacheKey = this.getCacheKey(
+      (err as I18nError).type,
+      (err as I18nError).data
+    );
 
     if (!cacheKey) {
       console.log("unknown error", err);

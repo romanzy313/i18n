@@ -1,6 +1,3 @@
-import { I18nRuntime } from ".";
-import { I18nEvents } from "./EventHandler";
-
 export type GenericGeneratedType = {
   t: RecursedObj<TArgs>;
   n: { [key: string]: GenericGeneratedType };
