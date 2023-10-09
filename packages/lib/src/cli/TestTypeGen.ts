@@ -21,6 +21,7 @@ export type Default = {
     "count": number;
   };
 }
+
 export type Hello = {
   "nested.key": {};
 }
