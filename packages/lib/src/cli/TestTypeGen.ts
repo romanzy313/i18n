@@ -2,6 +2,8 @@
   AUTOMATICALLY GENERATED TYPES, DO NOT MODIFY
 */
 
+export default TestTypeGen;
+
 export type TestTypeGen = {
   "this": {
     [key in keyof Default as `default:${key}`]: Default[key]

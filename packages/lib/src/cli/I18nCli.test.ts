@@ -5,7 +5,7 @@ import MemLoader from "../loader/MemLoader";
 import ICUFormatter from "../formatter/ICUFormatter";
 import JsonParser from "../parser/JsonParser";
 import I18nCli from "./I18nCli";
-import { TestTypeGen } from "./TestTypeGen";
+import TestTypeGen from "./TestTypeGen";
 
 // TODO try expectTypeOf,
 
@@ -78,6 +78,8 @@ describe("i18n", () => {
     await cli.flushToDisk(val);
 
     expect(val).toContain("DO NOT MODIFY");
+
+    expect(val).toContain("export default TestTypeGen;");
 
     // check the main type
     expect(val).toContain(`export type TestTypeGen = {

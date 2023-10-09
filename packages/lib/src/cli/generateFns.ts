@@ -190,6 +190,8 @@ export function renderGeneratedType(
   AUTOMATICALLY GENERATED TYPES, DO NOT MODIFY
 */\n\n`;
 
-  return header + main + "\n\n" + translations.join("\n\n");
+  const defaultExport = `export default ${outputName};\n\n`;
+
+  return header + defaultExport + main + "\n\n" + translations.join("\n\n");
   // returns the this and others
 }
