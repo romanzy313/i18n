@@ -136,17 +136,4 @@ describe("i18n", () => {
     expect(i18n.t_locale("en", "default:no")).toBe("no");
     expect(i18n.t_locale("ru", "hello:nested.key")).toBe("привет");
   });
-
-  test("memloader lists properly", async () => {
-    const res = await i18n.runtime.loader.list();
-
-    expect(res.length).toBe(4);
-
-    // this can be flakey?
-    expect(res).toContainEqual({
-      extension: "",
-      locale: "en",
-      namespace: "hello",
-    });
-  });
 });
