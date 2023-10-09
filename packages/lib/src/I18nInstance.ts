@@ -409,16 +409,14 @@ export class I18nInstance<T extends GenericGeneratedType> extends I18nChain<T> {
   }
 
   async loadAllTranslations(): Promise<boolean> {
-    throw new Error("not reimplemented yet");
+    const list = await this.runtime.loader.list();
 
-    // const list = await this.runtime.loader.list();
+    const promises = list.map(({ locale, namespace }) =>
+      this.loadSingleTranslation(locale, namespace)
+    );
 
-    // const promises = list.map(({ locale, namespace }) =>
-    //   this.loadSingleTranslation(locale, namespace)
-    // );
+    const res = await Promise.all(promises);
 
-    // const res = await Promise.all(promises);
-
-    // return res.every((v) => v == true);
+    return res.every((v) => v == true);
   }
 }

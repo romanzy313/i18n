@@ -129,6 +129,14 @@ describe("i18n", () => {
     expect(i18n.t_locale("ru", "hello:nested.key")).toBe("привет");
   });
 
+  test("loads all translations", async () => {
+    const ok = await i18n.loadAllTranslations();
+    expect(ok).toBe(true);
+
+    expect(i18n.t_locale("en", "default:no")).toBe("no");
+    expect(i18n.t_locale("ru", "hello:nested.key")).toBe("привет");
+  });
+
   test("memloader lists properly", async () => {
     const res = await i18n.runtime.loader.list();
 
