@@ -33,8 +33,6 @@ export type InnerI18nOpts = {
 
   nsSeparator: string;
   keySeparator: string;
-  startDelimiter: string;
-  endDelimiter: string;
 };
 
 export type I18nOpts = {
@@ -67,8 +65,6 @@ function processOpts(opts: I18nOpts): InnerI18nOpts {
     fallbackLocale: opts.fallbackLocale,
     nsSeparator: opts.nsSeparator || ":",
     keySeparator: opts.keySeparator || ".",
-    startDelimiter: opts.startDelimiter || "{{",
-    endDelimiter: opts.endDelimiter || "}}",
   };
 }
 
@@ -330,7 +326,6 @@ export class I18nChain<T extends GenericGeneratedType> {
     );
   }
 
-  // TODO this needs a different type, as n allows intermediaries
   public async loadTranslation<Key extends keyof T["others"]>(key: Key) {
     return this.loadSingleTranslation(this.locale, key as string);
   }
@@ -344,7 +339,7 @@ export class I18nChain<T extends GenericGeneratedType> {
     return res.every((v) => v == true);
   }
 
-  // loads the current namespace, only available in translations!
+  // loads the current namespace, only available in sub namespace
   public async loadRootScopeTranslation() {
     if (!this._namespace) {
       this.runtime.eventHandler.handleEvent(
@@ -361,6 +356,7 @@ export class I18nChain<T extends GenericGeneratedType> {
 
     return loadRes;
   }
+
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale: string | undefined | null;
     namespace: Key;
@@ -381,7 +377,7 @@ export class I18nChain<T extends GenericGeneratedType> {
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale?: string | undefined | null;
     namespace?: Key;
-  }): unknown {
+  }) {
     const newChain = new I18nChain(
       this.opts,
       this.runtime,
@@ -396,7 +392,6 @@ export class I18nChain<T extends GenericGeneratedType> {
 export class I18nInstance<T extends GenericGeneratedType> extends I18nChain<T> {
   constructor(opts: I18nOpts) {
     // do some preliminary checks
-
     if (!opts.locales.includes(opts.fallbackLocale))
       throw new Error("fallback locale must be define in locales");
 
