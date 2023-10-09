@@ -29,11 +29,8 @@ export type I18nRuntime = {
 
 export type InnerI18nOpts = {
   locales: string[];
-  // locale: string;
-  // namespace: string[];
-  fallbackLocale: string; // is this needed? why would namespace
+  fallbackLocale: string;
 
-  // its like getSubI18n
   nsSeparator: string;
   keySeparator: string;
   startDelimiter: string;
@@ -62,21 +59,6 @@ export type I18nOpts = {
   events?: I18nEventOptions;
 
   formatNotFound?: (args: NotFoundArgs) => string;
-
-  // we load them with loader
-
-  // backend?: BackendObj;
-
-  /**
-   * What is output when the key is not found, or there is an error
-   * can interpolate it using same delimiters. Important variables to note:
-   *  * original - full value that was given to t
-   *  * key - key only
-   *  * ns - namespace only
-   */
-
-  // default true. will only run one instance of the caching
-  singleton?: boolean;
 };
 
 function processOpts(opts: I18nOpts): InnerI18nOpts {
