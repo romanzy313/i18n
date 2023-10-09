@@ -9,10 +9,74 @@ import {
 import { I18nError } from "../I18nError";
 
 export type NodeFsLoaderOptions = {
+  /**
+   * usually this is a path relative to the project root where the server is started from
+   * by default the `process.env.PWD` is used
+   */
   rootPath?: string;
-  // root path is the template!
+  /**
+   * relative path from `rootPath` to where the translations are saved in given format
+   */
   folder: string;
 };
+
+export default class NodeFsLoader extends BaseLoader {
+  private rootDir: string;
+  private formatPath: InterpolatePathFn;
+  private folder: string;
+
+  constructor(opts: NodeFsLoaderOptions) {
+    super();
+
+    this.rootDir = opts.rootPath || process.env.PWD!;
+    if (!this.rootDir) throw new Error("invalid rootPath");
+
+    this.folder = opts.folder;
+    this.formatPath = makePathInterpolator(opts.folder, "/");
+  }
+
+  async load(
+    locale: string,
+    namespace: string,
+    extension: string
+  ): Promise<string> {
+    const relativePath = this.formatPath(locale, namespace, extension);
+
+    try {
+      const completePath = safePathJoin(this.rootDir, relativePath);
+      const rawContent = await fs.readFile(completePath, "utf8");
+      return rawContent;
+    } catch (err: any) {
+      throw new I18nError("loadFailure", {
+        operation: "load",
+        targetObj: {
+          locale,
+          namespace,
+          extension,
+        },
+        reason: err?.message, // okay?
+      });
+    }
+  }
+
+  async list(): Promise<ListResult[]> {
+    const rootPath = safePathJoin(this.rootDir, this.folder);
+    const deinterp = makeMinDeinterpolator("/");
+
+    const res = await fs.readdir(rootPath, {
+      recursive: true,
+    });
+
+    const output: ListResult[] = [];
+
+    res.forEach((v) => {
+      const parsed = deinterp(v);
+      if (parsed && parsed.extension) output.push(parsed);
+    });
+
+    return output;
+  }
+}
 
 /**
  *
@@ -37,73 +101,3 @@ const safePathJoin = function (safeBase: string, ...rest: string[]) {
 
   return result;
 };
-
-export default class NodeFsLoader extends BaseLoader {
-  private rootDir: string;
-  private formatPath: InterpolatePathFn;
-  private folder: string;
-
-  constructor(opts: NodeFsLoaderOptions) {
-    super();
-
-    this.rootDir = opts.rootPath || process.env.PWD!;
-    if (!this.rootDir) throw new Error("invalid rootPath");
-
-    this.folder = opts.folder;
-    // TODO do i need to include the root dir here?
-    this.formatPath = makePathInterpolator(opts.folder, "/");
-  }
-
-  async load(
-    locale: string,
-    namespace: string,
-    extension: string
-  ): Promise<string> {
-    const relativePath = this.formatPath(locale, namespace, extension);
-
-    try {
-      const completePath = safePathJoin(this.rootDir, relativePath);
-      const rawContent = await fs.readFile(completePath, "utf8");
-      // const content = JSON.parse(rawContent);
-
-      // console.log("got loader content", content);
-
-      // return content;
-      return rawContent;
-
-      // return content;
-    } catch (err: any) {
-      // console.log("fs load error", error);
-
-      // need ability yo proxy the actual error
-      throw new I18nError("loadFailure", {
-        operation: "load",
-        targetObj: {
-          locale,
-          namespace,
-          extension,
-        },
-        reason: err?.message, // okay?
-      });
-    }
-  }
-
-  async list(): Promise<ListResult[]> {
-    // const deinterp = makePathDeinterpolator(this.folder, "/");
-    const rootPath = safePathJoin(this.rootDir, this.folder);
-    const deinterp = makeMinDeinterpolator("/");
-
-    const res = await fs.readdir(rootPath, {
-      recursive: true,
-    });
-
-    const output: ListResult[] = [];
-
-    res.forEach((v) => {
-      const parsed = deinterp(v);
-      if (parsed && parsed.extension) output.push(parsed);
-    });
-
-    return output;
-  }
-}

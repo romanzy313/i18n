@@ -48,14 +48,13 @@ export default class MemLoader extends BaseLoader {
 
       this.loadFns.set(cacheKey, () => translations[namespace]);
     });
-
-    // translations.forEach(t => {
-
-    // });
   }
+
+  // TODO optimize this
   // this always returns json
   // but it doesnt have to
   // an actual object can be passed, but then its a lot of type overides to any
+  // this has a potential to get used in production, so invistigate later
   async load(
     locale: string,
     namespace: string,

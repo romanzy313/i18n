@@ -1,139 +1,141 @@
-import { describe, test, expectTypeOf } from "vitest";
-import { GenericGeneratedType, GeneratedTranslation } from "./types";
+export {};
 
-// types
-export type TestGeneratedType = {
-  this: {
-    [key1 in keyof Translation1 as `translation1:${key1}`]: Translation1[key1];
-  } & {
-    [key2 in keyof Translation2 as `translation2:${key2}`]: Translation2[key2];
-  };
-  others: {
-    translation1: Translation1;
-    translation2: Translation2;
-  };
-};
+// import { describe, test, expectTypeOf } from "vitest";
+// import { GenericGeneratedType, GeneratedTranslation } from "./types";
 
-export type Translation1 = {
-  key1: {
-    hello: string;
-  };
-  another: {};
-};
-export type Translation2 = {
-  "nested.value.is.like.this": {
-    count: number;
-  };
-  locales: {};
-};
+// // types
+// export type TestGeneratedType = {
+//   this: {
+//     [key1 in keyof Translation1 as `translation1:${key1}`]: Translation1[key1];
+//   } & {
+//     [key2 in keyof Translation2 as `translation2:${key2}`]: Translation2[key2];
+//   };
+//   others: {
+//     translation1: Translation1;
+//     translation2: Translation2;
+//   };
+// };
 
-function shadow() {
-  const actualValue: TestGeneratedType = {
-    this: {
-      "translation1:key1": {
-        hello: "lala",
-      },
-      "translation1:another": {},
-      "translation2:nested.value.is.like.this": {
-        count: 44,
-      },
-      "translation2:locales": {},
-    },
-    others: {
-      translation1: {
-        key1: {
-          hello: "lala",
-        },
-        another: {},
-      },
-      translation2: {
-        "nested.value.is.like.this": {
-          count: 44,
-        },
-        locales: {},
-      },
-    },
-  };
+// export type Translation1 = {
+//   key1: {
+//     hello: string;
+//   };
+//   another: {};
+// };
+// export type Translation2 = {
+//   "nested.value.is.like.this": {
+//     count: number;
+//   };
+//   locales: {};
+// };
 
-  // make a class that does not have sub anymore
-  // divide it into globals and not
+// function shadow() {
+//   const actualValue: TestGeneratedType = {
+//     this: {
+//       "translation1:key1": {
+//         hello: "lala",
+//       },
+//       "translation1:another": {},
+//       "translation2:nested.value.is.like.this": {
+//         count: 44,
+//       },
+//       "translation2:locales": {},
+//     },
+//     others: {
+//       translation1: {
+//         key1: {
+//           hello: "lala",
+//         },
+//         another: {},
+//       },
+//       translation2: {
+//         "nested.value.is.like.this": {
+//           count: 44,
+//         },
+//         locales: {},
+//       },
+//     },
+//   };
 
-  // maybe have scope.withLang("en").t()
+//   // make a class that does not have sub anymore
+//   // divide it into globals and not
 
-  class ManualType<T extends GenericGeneratedType> {
-    public t<Key extends keyof T["this"]>(
-      relativePath: Key,
-      args?: T["this"][Key]
-    ) {
-      // testing
-    }
+//   // maybe have scope.withLang("en").t()
 
-    public async loadTranslation<Key extends keyof T["others"]>(
-      keyOrKeys: Key | Key[]
-    ) {
-      // testing
-    }
+//   class ManualType<T extends GenericGeneratedType> {
+//     public t<Key extends keyof T["this"]>(
+//       relativePath: Key,
+//       args?: T["this"][Key]
+//     ) {
+//       // testing
+//     }
 
-    public getSubI18n<Key extends keyof T["others"]>(opts: {
-      locale: string | undefined | null;
-    }): this;
-    public getSubI18n<Key extends keyof T["others"]>(opts: {
-      locale: string | undefined | null;
-      namespace: Key;
-    }): ManualType<{
-      this: T["others"][Key]; // was typeof opts.namespace
-      others: {};
-    }>;
-    public getSubI18n<Key extends keyof T["others"]>(opts: {
-      namespace: Key;
-    }): ManualType<{
-      this: T["others"][Key]; // was typeof opts.namespace
-      others: {};
-    }>;
-    public getSubI18n<Key extends keyof T["others"]>(opts: {
-      locale?: string | undefined | null;
-      namespace?: Key;
-    }): unknown {
-      // testing
-      return;
-    }
-  }
+//     public async loadTranslation<Key extends keyof T["others"]>(
+//       keyOrKeys: Key | Key[]
+//     ) {
+//       // testing
+//     }
 
-  const newManual = new ManualType<TestGeneratedType>();
+//     public getSubI18n<Key extends keyof T["others"]>(opts: {
+//       locale: string | undefined | null;
+//     }): this;
+//     public getSubI18n<Key extends keyof T["others"]>(opts: {
+//       locale: string | undefined | null;
+//       namespace: Key;
+//     }): ManualType<{
+//       this: T["others"][Key]; // was typeof opts.namespace
+//       others: {};
+//     }>;
+//     public getSubI18n<Key extends keyof T["others"]>(opts: {
+//       namespace: Key;
+//     }): ManualType<{
+//       this: T["others"][Key]; // was typeof opts.namespace
+//       others: {};
+//     }>;
+//     public getSubI18n<Key extends keyof T["others"]>(opts: {
+//       locale?: string | undefined | null;
+//       namespace?: Key;
+//     }): unknown {
+//       // testing
+//       return;
+//     }
+//   }
 
-  const justLocale = newManual.getSubI18n({
-    locale: "lala",
-  });
+//   const newManual = new ManualType<TestGeneratedType>();
 
-  newManual.t("translation1:key1", {
-    hello: "sdsd",
-  });
+//   const justLocale = newManual.getSubI18n({
+//     locale: "lala",
+//   });
 
-  newManual.loadTranslation("translation2");
+//   newManual.t("translation1:key1", {
+//     hello: "sdsd",
+//   });
 
-  const sub = newManual.getSubI18n({
-    namespace: "translation1",
-  });
+//   newManual.loadTranslation("translation2");
 
-  // sub.loadTranslation()
+//   const sub = newManual.getSubI18n({
+//     namespace: "translation1",
+//   });
 
-  sub.t("key1", {
-    hello: "sdfsdf",
-  });
+//   // sub.loadTranslation()
 
-  // describe("type tests", () => {
-  //   test("manually generated types are correct", () => {
-  //   })
-  // })
+//   sub.t("key1", {
+//     hello: "sdfsdf",
+//   });
 
-  // const deggen: TestGeneratedType = {
-  //   $: {
-  //     "translation1:key1": {
-  //       hello: "value"
-  //     }
-  //   },
-  //   translation1: {
+//   // describe("type tests", () => {
+//   //   test("manually generated types are correct", () => {
+//   //   })
+//   // })
 
-  //   }
-  // }
-}
+//   // const deggen: TestGeneratedType = {
+//   //   $: {
+//   //     "translation1:key1": {
+//   //       hello: "value"
+//   //     }
+//   //   },
+//   //   translation1: {
+
+//   //   }
+//   // }
+// }

@@ -1,4 +1,6 @@
 // TODO deslashing and external link detection
+// pathname utils are provided, this way browser and server can do it differently
+// utils act on current locale and namespace
 export class PathnameUtls {
   getLink(locale: string, path: string): string {
     // do path deslashing beforehand

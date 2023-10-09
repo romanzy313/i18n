@@ -1,6 +1,6 @@
-/* 
-  AUTOMATICALLY GENERATED TYPES, DO NOT MODIFY
-*/
+/** 
+ * AUTOMATICALLY GENERATED TYPES, DO NOT MODIFY
+ */
 
 export default TestTypeGen;
 

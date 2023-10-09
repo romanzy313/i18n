@@ -23,9 +23,6 @@ export interface I18nEvents {
   debug: (message: string) => void;
 }
 
-// export type I18nEventOptions = Partial<{
-//   [key in keyof I18nEvents as `on${Capitalize<key>}`]: I18nEvents[key];
-// }>;
 export type I18nEventOptions = Partial<{
   [key in keyof I18nEvents]: I18nEvents[key];
 }>;
@@ -37,9 +34,6 @@ export class I18nEventHandler {
   // , private notFoundFormatter: (args: NotFoundArgs) => string
   constructor(private handler: I18nEvents) {}
 
-  // this can have its own set
-  // why go to the map?
-  //
   private getCacheKey<Key extends keyof I18nEvents>(
     type: Key,
     value: Parameters<I18nEvents[Key]>[0]
@@ -58,22 +52,15 @@ export class I18nEventHandler {
 
     return null;
   }
-  //   handleEvent<Type extends keyof I18nEvents>(tt: inferType<Type>) {
   handleEvent<Key extends keyof I18nEvents>(
     type: Key,
     value: Parameters<I18nEvents[Key]>[0]
   ): void {
-    // so now we need to take this and get the cache key
-
-    // if (data.type == "debug") return;
-
     const cacheKey = this.getCacheKey(type, value);
 
     if (!cacheKey) throw new Error("cannot handle event, more info TODO"); // TODO
 
     if (this.eventCache.has(cacheKey)) return;
-
-    // console.log("handling event with cache key", cacheKey);
 
     // the handler below deals with all sideeffects, by default hardcoded to console.logs
     // @ts-expect-error
@@ -100,8 +87,6 @@ export class I18nEventHandler {
     if (this.eventCache.has(cacheKey)) return;
     // @ts-expect-error
     this.handler[type](value);
-
-    // like doing a console log
 
     this.eventCache.add(cacheKey);
   }

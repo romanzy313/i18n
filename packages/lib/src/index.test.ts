@@ -9,7 +9,6 @@ export type TestGeneratedType = any;
 
 let i18n: I18nInstance<TestGeneratedType>;
 let notFound = vi.fn();
-// loader.register("en", translation or () => translation or async () => translation)
 
 beforeEach(() => {
   // notFound = vi.fn()
@@ -67,10 +66,7 @@ afterEach(() => {
 
 describe("i18n", () => {
   test("basic use cases", async () => {
-    // english is default
-    // await i18n.loadTranslation("default");
     const defScope = i18n.getSubI18n({
-      // this should autoload it??
       namespace: "default",
     });
     await defScope.loadRootScopeTranslation();
@@ -87,7 +83,7 @@ describe("i18n", () => {
       })
     ).toBe("You have 4 photos.");
 
-    // load nested
+    // load nested keys
 
     await i18n.loadTranslation("hello");
 
@@ -96,9 +92,8 @@ describe("i18n", () => {
     expect(defScope.t("bad")).toBe("***not found***");
 
     expect(notFound).toBeCalledTimes(1);
-    // create new scope
+
     const ruScope = i18n.getSubI18n({
-      // this should autoload it??
       locale: "ru",
       namespace: "default",
     });
@@ -108,7 +103,7 @@ describe("i18n", () => {
     expect(ruScope.t("yes")).toBe("да");
   });
 
-  test("changing option on the scope directly", async () => {
+  test("getting sub i18n", async () => {
     notFound();
     const defScope = i18n.getSubI18n({
       // this should autoload it??

@@ -199,10 +199,6 @@ export class I18nChain<T extends GenericGeneratedType> {
     return this.opts.fallbackLocale;
   }
 
-  // private getTranslationCacheKey(locale: string, namespace: string) {
-  //   return `${locale}_${namespace}`;
-  // }
-
   public getSafeLocale(locale: string | undefined | null) {
     const isOk = locale && this.opts.locales.includes(locale);
     if (!isOk) {
@@ -214,30 +210,28 @@ export class I18nChain<T extends GenericGeneratedType> {
     return isOk ? locale : this.opts.fallbackLocale;
   }
 
-  // this is only available at the root
-  // private enterNamespace(newNamespace: string[]) {
-  //   this.opts.namespace.push(...newNamespace);
-  //   // this.opts.namespace = opts.namespace.split(this.opts.nsSeparator);
-  // }
+  public setLocale(newLocale: string) {
+    const safeLocale = this.getSafeLocale(newLocale);
+    this._locale = safeLocale;
+  }
+
+  // TODO also load all the new translations needed if locale is changed.
+  public changeLocaleAndReloadTranslations(newLocale: string) {
+    throw new Error("Method not implemented.");
+  }
 
   private addTranslationFunctions(
     locale: string,
-    // namespace: string,
-    fullNamespace: string,
+    namespace: string,
     obj: Record<string, any>,
     parentKey = ""
   ) {
     // const result = new Map<string, string>();
     for (const key in obj) {
-      if (
-        typeof obj[key] === "object"
-        // &&
-        // !Array.isArray(obj[key]) &&
-        // obj[key] !== null
-      ) {
+      if (typeof obj[key] === "object") {
         this.addTranslationFunctions(
           locale,
-          fullNamespace,
+          namespace,
           obj[key],
 
           parentKey + key + this.opts.keySeparator
@@ -245,7 +239,7 @@ export class I18nChain<T extends GenericGeneratedType> {
       } else {
         // Leaf node found, add it to the result map
         // namespace will 100% be defined
-        const fullKey = `${locale}_${fullNamespace}${this.opts.nsSeparator}${parentKey}${key}`;
+        const fullKey = `${locale}_${namespace}${this.opts.nsSeparator}${parentKey}${key}`;
         const value = obj[key];
         this.runtime.translateFns.set(
           fullKey,
@@ -255,9 +249,7 @@ export class I18nChain<T extends GenericGeneratedType> {
     }
   }
 
-  // break it down
   protected async loadSingleTranslation(
-    // relativeNamespace: string
     locale: string,
     namespace: string
   ): Promise<boolean> {
@@ -294,14 +286,6 @@ export class I18nChain<T extends GenericGeneratedType> {
     });
     this.runtime.loading.set(cacheKey, loadPromise);
     return loadPromise;
-  }
-
-  // USER FACING FUNCTIONS
-
-  public setLocale(newLocale: string) {
-    // TODO also load all the new translations needed if locale is changed.
-    const safeLocale = this.getSafeLocale(newLocale);
-    this._locale = safeLocale;
   }
 
   private t_internal(locale: string, relativePath: string, args?: TArgs) {
@@ -353,12 +337,8 @@ export class I18nChain<T extends GenericGeneratedType> {
   public async loadTranslation<Key extends keyof T["others"]>(
     keyOrKeys: Key | Key[]
   ) {
-    // ns is relative to the current scope!
-
     if (typeof keyOrKeys === "string")
       return this.loadSingleTranslation(this.locale, keyOrKeys);
-
-    // const realKeys = Array.isArray(keys) ? keys : [keys];
 
     const res = await Promise.all(
       (keyOrKeys as string[]).map((key) =>
@@ -384,21 +364,19 @@ export class I18nChain<T extends GenericGeneratedType> {
     );
 
     return loadRes;
-    // const path = this.opts.namespace.join(this.opts.nsSeparator);
-    // return this.loadTranslation(path);
   }
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale: string | undefined | null;
     namespace: Key;
   }): I18nChain<{
-    this: T["others"][Key]; // was typeof opts.namespace
+    this: T["others"][Key];
     others: {};
   }>;
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale?: string | undefined | null;
     namespace: Key;
   }): I18nChain<{
-    this: T["others"][Key]; // was typeof opts.namespace
+    this: T["others"][Key];
     others: {};
   }>;
   public getSubI18n<Key extends keyof T["others"]>(opts: {
@@ -408,8 +386,6 @@ export class I18nChain<T extends GenericGeneratedType> {
     locale?: string | undefined | null;
     namespace?: Key;
   }): unknown {
-    // const optsCopy = { ...this.opts };
-
     const newChain = new I18nChain(
       this.opts,
       this.runtime,
@@ -421,9 +397,6 @@ export class I18nChain<T extends GenericGeneratedType> {
   }
 }
 
-// const s: I18nScope<any> = new I18nChain<any>({} as any, {} as any);
-
-// s.
 export class I18nInstance<T extends GenericGeneratedType> extends I18nChain<T> {
   constructor(opts: I18nOpts) {
     // do some preliminary checks
@@ -444,15 +417,6 @@ export class I18nInstance<T extends GenericGeneratedType> extends I18nChain<T> {
     super(innerOpts, runtime, startLocale, "");
   }
 
-  // can scope only once
-  // then you can still change the langs
-  // its just scopes are just helpers!
-  // dont allow to recursively do this,
-  // as it does seem like an overcomplicated idea
-
-  // some superspecial things
-  // like ability to start a cli process?
-
   async loadAllTranslations(): Promise<boolean> {
     throw new Error("not reimplemented yet");
 
@@ -466,15 +430,4 @@ export class I18nInstance<T extends GenericGeneratedType> extends I18nChain<T> {
 
     // return res.every((v) => v == true);
   }
-
-  attachToCli() {
-    // basically proxies commands with opts to the outsider
-  }
-  testTranslation() {}
-
-  // fill forcefully reset this instance...
-  // all children are still dangling! can keep a list of them when making it
-  // so that when reset is called, everything is cleaned up and removed!
-  // this is probably not needed though
-  reset() {}
 }

@@ -12,6 +12,7 @@ export default class UCIFormatter extends BaseFormatter {
     let result: Record<string, any> = {};
 
     ast.forEach((val) => {
+      // TODO check these and add more types
       if (val.type == 1) {
         // its argument
         result[val.value] = "string";

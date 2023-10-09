@@ -185,10 +185,9 @@ export function renderGeneratedType(
       }),
     },
   });
-
-  const header = `/* 
-  AUTOMATICALLY GENERATED TYPES, DO NOT MODIFY
-*/\n\n`;
+  const header = `/** 
+ * AUTOMATICALLY GENERATED TYPES, DO NOT MODIFY
+ */\n\n`;
 
   const defaultExport = `export default ${outputName};\n\n`;
 

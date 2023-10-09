@@ -7,8 +7,6 @@ import JsonParser from "../parser/JsonParser";
 import I18nCli from "./I18nCli";
 import TestTypeGen from "./TestTypeGen";
 
-// TODO try expectTypeOf,
-
 let i18n: I18nInstance<TestTypeGen>;
 let cli: I18nCli;
 
@@ -68,11 +66,10 @@ describe("i18n", () => {
   test.todo("type test", () => {
     // TODO vite typechecking of the TestTypes (after its been generated above)
     // test actual usage, that it stricktly types them
+    // try vi.expectTypeOf,
   });
   test("type generation", async () => {
     const val = await cli.generateTypes();
-
-    console.log("generated type", val);
 
     // TODO dont flush
     await cli.flushToDisk(val);
