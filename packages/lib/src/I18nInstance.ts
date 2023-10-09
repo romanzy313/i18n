@@ -387,18 +387,8 @@ export class I18nChain<T extends GenericGeneratedType> {
     // const path = this.opts.namespace.join(this.opts.nsSeparator);
     // return this.loadTranslation(path);
   }
-
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale: string | undefined | null;
-  }): this;
-  public getSubI18n<Key extends keyof T["others"]>(opts: {
-    locale: string | undefined | null;
-    namespace: Key;
-  }): I18nChain<{
-    this: T["others"][Key]; // was typeof opts.namespace
-    others: {};
-  }>;
-  public getSubI18n<Key extends keyof T["others"]>(opts: {
     namespace: Key;
   }): I18nChain<{
     this: T["others"][Key]; // was typeof opts.namespace
@@ -406,8 +396,18 @@ export class I18nChain<T extends GenericGeneratedType> {
   }>;
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale?: string | undefined | null;
+    namespace: Key;
+  }): I18nChain<{
+    this: T["others"][Key]; // was typeof opts.namespace
+    others: {};
+  }>;
+  public getSubI18n<Key extends keyof T["others"]>(opts: {
+    locale: string | undefined | null;
+  }): this;
+  public getSubI18n<Key extends keyof T["others"]>(opts: {
+    locale?: string | undefined | null;
     namespace?: Key;
-  }) {
+  }): unknown {
     // const optsCopy = { ...this.opts };
 
     const newChain = new I18nChain(

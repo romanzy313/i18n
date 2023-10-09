@@ -1,13 +1,15 @@
-import { beforeEach, describe, expect, expectTypeOf, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import { I18nInstance } from "../I18nInstance";
 import MemLoader from "../loader/MemLoader";
 import ICUFormatter from "../formatter/ICUFormatter";
 import JsonParser from "../parser/JsonParser";
 import I18nCli from "./I18nCli";
-// import type { TestTypes } from "../gen/TestTypes";
+import { TestTypeGen } from "./TestTypeGen";
 
-let i18n: I18nInstance<any>;
+// TODO try expectTypeOf,
+
+let i18n: I18nInstance<TestTypeGen>;
 let cli: I18nCli;
 
 beforeEach(() => {
@@ -46,7 +48,7 @@ beforeEach(() => {
     },
   });
 
-  i18n = new I18nInstance<any>({
+  i18n = new I18nInstance<TestTypeGen>({
     locales: ["en", "ru"],
     fallbackLocale: "en",
     nsSeparator: ":",
@@ -70,36 +72,54 @@ describe("i18n", () => {
   test("type generation", async () => {
     const val = await cli.generateTypes();
 
-    expect(val).toStrictEqual(`export type TestTypeGen = {
-	"default:yes": {}
-	"default:no": {}
-	"default:photos": {
-		"count": number
-	}
-	"hello:nested.key": {}
-}
-export default TestTypeGen;`);
+    console.log("generated type", val);
 
     // TODO dont flush
     await cli.flushToDisk(val);
 
-    // lets try it, works nice!
+    expect(val).toContain("DO NOT MODIFY");
 
-    // // now test the types, it wont work right away?
-    // await i18n.loadTranslation("default"); // this can also be typed... but how can I inherit it?? typeofs?
+    // check the main type
+    expect(val).toContain(`export type TestTypeGen = {
+  "this": {
+    [key in keyof Default as \`default:\${key}\`]: Default[key]
+  } & {
+    [key in keyof Hello as \`hello:\${key}\`]: Hello[key]
+  };
+  "others": {
+    "default": Default;
+    "hello": Hello;
+  };
+}`);
+    // base subtype
+    expect(val).toContain(`export type Default = {
+  "yes": {};
+  "no": {};
+  "photos": {
+    "count": number;
+  };
+}`);
 
-    // const scoped = i18n.getSubI18n({
-    //   namespace: "default", // this should be autocompleted
-    // });
-    // const res = scoped.t("default:no");
+    // and nested key
+    expect(val).toContain(`export type Hello = {
+  "nested.key": {};
+}`);
 
-    // const typedResult = i18n.t("default:photos", {
-    //   count: 4,
-    // });
-    // expect(typedResult).toBe("You have 4 photos.");
+    // just validation that types are accepted
+
+    await i18n.loadTranslation("default");
+    i18n.t("default:photos", {
+      count: 4,
+    });
+
+    const res = i18n.getSubI18n({ namespace: "default" }).t("photos", {
+      count: 33,
+    });
+
+    expect(res).toBe("You have 33 photos.");
   });
 
-  test.todo("typedef is correct", () => {
-    // expectTypeOf(i18n).parameter(0).toMatchTypeOf<{ name: string }>();
+  test("typedef is correct", () => {
+    // expectTypeOf(i18n.t).parameter(0).toMatchTypeOf<{ name: string }>();
   });
 });

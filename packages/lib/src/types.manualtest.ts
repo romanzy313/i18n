@@ -1,61 +1,6 @@
 import { describe, test, expectTypeOf } from "vitest";
 import { GenericGeneratedType, GeneratedTranslation } from "./types";
 
-// this is how you generate types
-
-// interfaces
-// export interface TestGeneratedType extends GenericGeneratedType {
-//   global: {
-//     readonly [key1 in keyof Translation1 as `translation1:${key1}`]: Translation1[key1];
-//   } & {
-//     readonly [key2 in keyof Translation2 as `translation2:${key2}`]: Translation2[key2];
-//   };
-//   translations: {
-//     translation1: Translation1;
-//     translation2: Translation2;
-//   };
-// }
-
-// const actualValue: TestGeneratedType = {
-//   global: {
-//     "translation1:key1": {
-//       hello: "lala",
-//     },
-//     "translation1:another": {},
-//     "translation2:nested.value.is.like.this": {
-//       count: 44,
-//     },
-//     "translation2:locales": {},
-//   },
-//   translations: {
-//     translation1: {
-//       key1: {
-//         hello: "lala",
-//       },
-//       another: {},
-//     },
-//     translation2: {
-//       "nested.value.is.like.this": {
-//         count: 44,
-//       },
-//       locales: {},
-//     },
-//   },
-// };
-
-// export interface Translation1 extends GeneratedTranslation {
-//   readonly key1: {
-//     hello: string;
-//   };
-//   readonly another: {};
-// }
-// export interface Translation2 extends GeneratedTranslation {
-//   readonly "nested.value.is.like.this": {
-//     count: number;
-//   };
-//   readonly locales: {};
-// }
-
 // types
 export type TestGeneratedType = {
   this: {

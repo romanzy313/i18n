@@ -4,10 +4,34 @@ import fs from "fs/promises";
 import path from "path";
 import { I18nInstance } from "../I18nInstance";
 import { ListResult } from "../loader/BaseLoader";
+import { renderGeneratedType } from "./generateFns";
 
 // here what i need to generate
 /**
- *
+export type TestGeneratedType = {
+  this: {
+    [key1 in keyof Translation1 as `translation1:${key1}`]: Translation1[key1];
+  } & {
+    [key2 in keyof Translation2 as `translation2:${key2}`]: Translation2[key2];
+  };
+  others: {
+    translation1: Translation1;
+    translation2: Translation2;
+  };
+};
+
+export type Translation1 = {
+  key1: {
+    hello: string;
+  };
+  another: {};
+};
+export type Translation2 = {
+  "nested.value.is.like.this": {
+    count: number;
+  };
+  locales: {};
+};
  */
 
 type KeyExpandResult = {
@@ -17,9 +41,14 @@ type KeyExpandResult = {
 
 type SingleKeyResult = {
   locale: string;
-  key: string[];
+  key: string; // unobjectify it
   namespace: string;
-  type: Record<string, any>;
+  type: Record<string, string>;
+};
+
+type SingleNamespaceResultObj = {
+  namespace: string;
+  obj: Record<string, Record<string, string>>;
 };
 
 function toKeyResult(
@@ -43,26 +72,6 @@ function toKeyResult(
   return results;
 }
 
-// TODO make this a class too
-
-// need to convert object into js object
-
-function objToType(obj: Record<string, any>, tabs: number) {
-  if (Object.keys(obj).length === 0) {
-    return "{}";
-  }
-
-  function oneItem(key: string, value: string) {
-    return `${"\t".repeat(tabs)}"${key}": ${value}\n`;
-  }
-
-  let res = `{\n${Object.keys(obj).map((v) => oneItem(v, obj[v]))}${"\t".repeat(
-    tabs - 1
-  )}}`;
-
-  return res;
-}
-
 type I18nCliOpts = {
   name: string;
   writeFolder: string;
@@ -71,42 +80,7 @@ type I18nCliOpts = {
 export default class I18nCli {
   constructor(public instance: I18nInstance<any>, private opts: I18nCliOpts) {}
 
-  generateFullType(singles: SingleKeyResult[]) {
-    // export type Typename = {
-
-    //}
-    let res = `export type ${this.opts.name} = {\n`;
-    singles.forEach((s) => {
-      res += "\t" + this.generateSingleType(s);
-    });
-    res += "}";
-
-    res += `\nexport default ${this.opts.name};`;
-
-    return res;
-  }
-
-  generateSingleType(single: SingleKeyResult) {
-    const ns = this.instance.opts.nsSeparator;
-    const key = this.instance.opts.keySeparator;
-
-    // "some_name_here": "type"
-    let result = `"`;
-
-    if (single.namespace.length > 0) {
-      result += single.namespace + ns;
-    }
-    result += single.key.join(key);
-    result += `": `;
-    result += objToType(single.type, 2);
-    result += `\n`;
-
-    return result;
-
-    // return `${single.namespace.join(ns)}`
-  }
-
-  async processTranslation(tr: ListResult): Promise<SingleKeyResult[]> {
+  async processTranslation(tr: ListResult): Promise<SingleNamespaceResultObj> {
     let raw: string;
     try {
       raw = await this.instance.runtime.loader.load(
@@ -122,13 +96,48 @@ export default class I18nCli {
 
     const keyResults = toKeyResult(parsed as any);
 
-    return keyResults.map((v) => ({
-      locale: tr.locale,
+    const results: SingleNamespaceResultObj = {
       namespace: tr.namespace,
-      key: v.key,
-      type: this.instance.runtime.formatter.getType(v.value, tr.locale),
-    }));
+      obj: {},
+    };
+
+    keyResults.forEach((v) => {
+      const flatKey = v.key.join(this.instance.opts.keySeparator);
+      const typeValue = this.instance.runtime.formatter.getType(
+        v.value,
+        tr.locale
+      );
+      results.obj[flatKey] = typeValue;
+    });
+
+    // lets return this as an object instead
+    return results;
   }
+
+  // async processTranslation(tr: ListResult): Promise<SingleKeyResult[]> {
+  //   let raw: string;
+  //   try {
+  //     raw = await this.instance.runtime.loader.load(
+  //       tr.locale,
+  //       tr.namespace,
+  //       tr.extension
+  //     );
+  //   } catch (error) {
+  //     throw error;
+  //   }
+
+  //   const parsed = this.instance.runtime.parser.parse(raw);
+
+  //   const keyResults = toKeyResult(parsed as any);
+
+  //   // lets return this as an object instead
+  //   return keyResults.map((v) => ({
+  //     locale: tr.locale,
+  //     namespace: tr.namespace,
+  //     key: v.key.join(this.instance.opts.keySeparator),
+  //     type: this.instance.runtime.formatter.getType(v.value, tr.locale),
+  //   }));
+  // }
 
   async generateTypes() {
     const loader = this.instance.runtime.loader;
@@ -142,11 +151,22 @@ export default class I18nCli {
     // need ability to compare locales, see what is different.
     items = items.filter((v) => v.locale !== this.instance.opts.fallbackLocale);
 
-    const batchProcessed = (
-      await Promise.all(items.map(this.processTranslation.bind(this)))
-    ).flat();
+    const batchProcessed = await Promise.all(
+      items.map(this.processTranslation.bind(this))
+    );
 
-    const full = this.generateFullType(batchProcessed);
+    const full = renderGeneratedType(
+      this.opts.name,
+      this.instance.opts.nsSeparator,
+      batchProcessed.map((v) => {
+        return {
+          quantifiedName: v.namespace, // all have the same namespace?
+          raw: v.obj,
+        };
+      })
+    );
+
+    // this.generateFullType(batchProcessed);
 
     return full;
   }
