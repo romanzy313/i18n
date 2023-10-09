@@ -1,83 +1,101 @@
+import { I18nError } from "../I18nError";
 import { BaseLoader, ListResult } from "./BaseLoader";
-const translationSymbol = Symbol();
-export default class MemLoader extends BaseLoader {
-  public static translation(val: Record<string, any>) {
-    return {
-      [translationSymbol]: true,
-      ...val,
-    };
-  }
 
-  constructor(private memSimulatedStore: Record<string, any>) {
+type TranslationValue = Record<string, any>; // really a recursive type with string leafs
+
+type LoadTranslation =
+  | TranslationValue
+  | (() => TranslationValue)
+  | (() => Promise<TranslationValue>);
+
+type ManyTranslations = Record<string, TranslationValue>;
+
+type LoadTranslationFn = (() => any) | (() => Promise<any>);
+export default class MemLoader extends BaseLoader {
+  private loadFns = new Map<string, LoadTranslationFn>();
+
+  constructor() {
     super();
   }
 
-  // this can throw standard error, locale: string, namespace: string[], fullInput: string
-  async load(
-    locale: string,
-    namespace: string[],
-    _extension: string
-  ): Promise<string> {
-    let item: Record<string, any> = this.memSimulatedStore;
-
-    if (!(locale in item)) throw new Error("bad locale");
-
-    let inTranslation = false;
-
-    item = item[locale];
-    for (let i = 0; i < namespace.length; i++) {
-      if (inTranslation)
-        throw new Error(
-          "not found, but really trying to escale emaginary namespace"
-        );
-
-      const ns = namespace[i];
-      if (ns in item) {
-        if (translationSymbol in item[ns]) inTranslation = true;
-
-        item = item[ns];
-      } else {
-        console.log("no there", this.memSimulatedStore, locale, namespace);
-        throw new Error("bad namespace " + JSON.stringify(namespace)); // but I also need to pass data, like full information of locale, namespace, key, whatever
-        // so lets do a custom error then
-      }
-    }
-
-    const res = JSON.stringify(item);
-
-    return res;
+  private getCacheKey(locale: string, namespace: string) {
+    return `${locale}_${namespace}`;
   }
 
-  private internalList(obj: any, parentNamespace: string[]): string[][] {
-    if (translationSymbol in obj) {
-      // means its a translation file, record this
-      return [parentNamespace]; // basically this is the namespace
-    }
+  async register(
+    locale: string,
+    namespace: string,
+    translation: LoadTranslation
+  ) {
+    const cacheKey = this.getCacheKey(locale, namespace);
 
-    const results: string[][] = [];
-    Object.keys(obj).forEach((key) => {
-      results.push(...this.internalList(obj[key], [...parentNamespace, key]));
+    if (this.loadFns.has(cacheKey))
+      throw new Error(`duplicate registration of ${locale} ${namespace}`);
+
+    const fn: any =
+      typeof translation === "function" ? translation : () => translation;
+
+    this.loadFns.set(cacheKey, fn);
+
+    // this.memSimulatedStore[locale] = res;
+  }
+
+  registerMany(locale: string, translations: ManyTranslations) {
+    Object.keys(translations).forEach((namespace) => {
+      const cacheKey = this.getCacheKey(locale, namespace);
+      if (this.loadFns.has(cacheKey))
+        throw new Error(`duplicate registration of ${locale} ${namespace}`);
+
+      this.loadFns.set(cacheKey, () => translations[namespace]);
     });
-    return results;
+
+    // translations.forEach(t => {
+
+    // });
+  }
+  // this always returns json
+  // but it doesnt have to
+  // an actual object can be passed, but then its a lot of type overides to any
+  async load(
+    locale: string,
+    namespace: string,
+    _extension: string
+  ): Promise<string> {
+    const cacheKey = this.getCacheKey(locale, namespace);
+
+    const loadFn = this.loadFns.get(cacheKey);
+
+    if (!loadFn)
+      throw new I18nError("loadFailure", {
+        operation: "load",
+        targetObj: {
+          locale,
+          namespace,
+          extension: _extension,
+        },
+        reason: "invalid locale or namespace",
+      });
+
+    const result = await loadFn();
+
+    return JSON.stringify(result);
   }
 
   async list(): Promise<ListResult[]> {
-    const locales = Object.keys(this.memSimulatedStore);
+    const keys = this.loadFns.keys();
 
+    // split them into pairs and turn into a list
     let results: ListResult[] = [];
 
-    locales.forEach((locale) => {
-      const namespaces = this.internalList(this.memSimulatedStore[locale], []);
+    for (const key of keys) {
+      const [locale, namespace] = key.split("_");
 
-      namespaces.forEach((namespace) => {
-        results.push({
-          locale,
-          namespace,
-          extension: "",
-          // need opts of the loader here, just return a path ()
-        });
+      results.push({
+        locale,
+        namespace,
+        extension: "",
       });
-    });
+    }
 
     return results;
   }

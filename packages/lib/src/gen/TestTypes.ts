@@ -4,5 +4,5 @@ export type TestTypes = {
 	"default:photos": {
 		"count": number
 	}
-	"hello:nested:namespace.key": {}
+	"hello:nested.key": {}
 }

@@ -2,14 +2,18 @@ import { I18nError } from "./I18nError";
 
 export interface NotFoundArgs {
   locale: string;
-  namespace: string[];
+  namespace: string;
   fullyResolvedPath: string;
 }
 
 export interface I18nEvents {
   translationNotFound: (args: NotFoundArgs) => void; // return the formatted value
   loadFailure: (args: {
-    targetObj: string;
+    targetObj: {
+      locale: string;
+      namespace: string;
+      extension: string;
+    };
     operation: "load" | "parse" | "format"; // where the error happened
     reason?: string; // more explanation if needed
   }) => void;

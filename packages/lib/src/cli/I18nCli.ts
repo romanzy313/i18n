@@ -10,16 +10,16 @@ type KeyExpandResult = {
   value: string;
 };
 
-type SingleItemResult = {
+type SingleKeyResult = {
   locale: string;
   key: string[];
-  namespace: string[];
+  namespace: string;
   type: Record<string, any>;
 };
 
 function toKeyResult(
   obj: string | Record<string, string>,
-  path: string[]
+  path: string[] = []
 ): KeyExpandResult[] {
   if (typeof obj === "string") {
     return [
@@ -66,7 +66,7 @@ type I18nCliOpts = {
 export default class I18nCli {
   constructor(public instance: I18nInstance, private opts: I18nCliOpts) {}
 
-  generateFullType(singles: SingleItemResult[]) {
+  generateFullType(singles: SingleKeyResult[]) {
     // export type Typename = {
 
     //}
@@ -79,7 +79,7 @@ export default class I18nCli {
     return res;
   }
 
-  generateSingleType(single: SingleItemResult) {
+  generateSingleType(single: SingleKeyResult) {
     const ns = this.instance.opts.nsSeparator;
     const key = this.instance.opts.keySeparator;
 
@@ -87,7 +87,7 @@ export default class I18nCli {
     let result = `"`;
 
     if (single.namespace.length > 0) {
-      result += single.namespace.join(ns) + ns;
+      result += single.namespace + ns;
     }
     result += single.key.join(key);
     result += `": `;
@@ -99,49 +99,29 @@ export default class I18nCli {
     // return `${single.namespace.join(ns)}`
   }
 
-  async processItem(item: ListResult) {
-    // const result: {
-    //   locale: string;
-    //   keys: string[];
-    // }[] = [];
-
-    const raw = await this.instance.runtime.loader.load(
-      item.locale,
-      item.namespace,
-      item.extension
-    );
-    if (raw instanceof Error) {
-      console.error("failed to load item", raw);
-      throw raw;
-      // throw new Error("");
+  async processTranslation(tr: ListResult): Promise<SingleKeyResult[]> {
+    let raw: string;
+    try {
+      raw = await this.instance.runtime.loader.load(
+        tr.locale,
+        tr.namespace,
+        tr.extension
+      );
+    } catch (error) {
+      throw error;
     }
+
     const parsed = this.instance.runtime.parser.parse(raw);
     console.log("got load res", parsed);
 
-    const list = toKeyResult(parsed as any, []);
+    const keyResults = toKeyResult(parsed as any);
 
-    const finalList = list.map((v) => {
-      return {
-        key: v.key,
-        types: this.instance.runtime.formatter.getType(v.value, item.locale),
-      };
-    });
-
-    return {
-      list: finalList,
-      ...item,
-    };
-    // return {
-    //   locale: item.locale,
-    //   key: list.map((v) => v.value),
-    //   namespace: item.namespace,
-    // };
-
-    // need to get keys on there too from the object shape
-    // ah this needs to do the leafing again... annoying as fuck
-    // const type = this.instance.runtime.formatter.getType(parsed, item.locale);
-
-    // now need to see
+    return keyResults.map((v) => ({
+      locale: tr.locale,
+      namespace: tr.namespace,
+      key: v.key,
+      type: this.instance.runtime.formatter.getType(v.value, tr.locale),
+    }));
   }
 
   async generateTypes() {
@@ -156,34 +136,11 @@ export default class I18nCli {
     // need ability to compare locales, see what is different.
     items = items.filter((v) => v.locale !== this.instance.opts.fallbackLocale);
 
-    const batchProcessed = await Promise.all(
-      items.map(this.processItem.bind(this))
-    );
+    const batchProcessed = (
+      await Promise.all(items.map(this.processTranslation.bind(this)))
+    ).flat();
 
-    const allItems: SingleItemResult[] = batchProcessed.flatMap((v) => {
-      return v.list.map((l) => {
-        return {
-          locale: v.locale,
-          key: l.key,
-          namespace: v.namespace,
-          type: l.types,
-        };
-      });
-    });
-
-    // const out2 = outcome.flatMap((v) => {
-    //   return v.map((res) => {
-    //     return {
-    //       key: res.key,
-    //       namespace: items[0].
-    //       value: res.value,
-
-    //     }
-    //   })
-    // })
-    // console.log("outcome", allItems);
-
-    const full = this.generateFullType(allItems);
+    const full = this.generateFullType(batchProcessed);
 
     return full;
   }

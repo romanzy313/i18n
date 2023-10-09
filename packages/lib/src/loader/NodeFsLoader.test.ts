@@ -7,7 +7,7 @@ describe("Node Fs Loader", () => {
       folder: "src/loader/test",
     });
 
-    const res = await loader.load("en", ["default"], "json");
+    const res = await loader.load("en", "default", "json");
 
     expect(res).toBe(`testing`);
   });
@@ -19,10 +19,9 @@ describe("Node Fs Loader", () => {
 
     const res = await loader.list();
 
-    // console.log("res", res);
     expect(res).toStrictEqual([
-      { locale: "en", namespace: ["default"], extension: "json" },
-      { locale: "en", namespace: ["test", "nested"], extension: "json" },
+      { locale: "en", namespace: "another", extension: "json" },
+      { locale: "en", namespace: "default", extension: "json" },
     ]);
   });
 });

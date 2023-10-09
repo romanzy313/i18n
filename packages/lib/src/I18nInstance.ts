@@ -1,6 +1,6 @@
 // this is the core class
 
-import { GenericGeneratedType } from ".";
+import { GenericGeneratedType, TArgs } from ".";
 import {
   I18nEventHandler,
   I18nEventOptions,
@@ -30,8 +30,8 @@ export type I18nRuntime = {
 
 export type InnerI18nOpts = {
   locales: string[];
-  locale: string;
-  namespace: string[];
+  // locale: string;
+  // namespace: string[];
   fallbackLocale: string; // is this needed? why would namespace
 
   // its like getSubI18n
@@ -81,14 +81,8 @@ export type I18nOpts = {
 };
 
 function processOpts(opts: I18nOpts): InnerI18nOpts {
-  const locale = opts.locales.includes(opts.currentLocale || "")
-    ? opts.currentLocale!
-    : opts.fallbackLocale;
-
   return {
     locales: opts.locales,
-    locale, // check if it is allowed!
-    namespace: [], // default is empty!
     fallbackLocale: opts.fallbackLocale,
     nsSeparator: opts.nsSeparator || ":",
     keySeparator: opts.keySeparator || ".",
@@ -130,6 +124,23 @@ function processEventOpts(eventOpts?: I18nEventOptions): I18nEvents {
   };
 }
 
+function createRuntime(opts: I18nOpts, eventOpts: I18nEvents): I18nRuntime {
+  return {
+    loader: opts.loader,
+    parser: opts.parser,
+    formatter: opts.formatter,
+    eventHandler: new I18nEventHandler(eventOpts),
+    //   cache: new Cache(),
+    loading: new Map(),
+    loaded: new Set(),
+    eventCache: new Set(),
+    formatNotFound:
+      opts.formatNotFound || (({ fullyResolvedPath }) => fullyResolvedPath),
+    utils: opts.utils || new PathnameUtls(),
+    translateFns: new Map<string, FormatTranslation>(),
+  };
+}
+
 // TODO publically exposed scopes need to remove internal public fields from types
 export type I18nScope<T extends GenericGeneratedType> = Omit<
   I18nChain<T>,
@@ -140,11 +151,22 @@ export class I18nChain<T extends GenericGeneratedType> {
   public opts: InnerI18nOpts; // public for now
   public runtime: I18nRuntime; // public for now
 
+  private _locale: string;
+  private _namespace: string;
   // private translateFns =
 
-  constructor(opts: InnerI18nOpts, runtime: I18nRuntime) {
+  constructor(
+    opts: InnerI18nOpts,
+    runtime: I18nRuntime,
+    locale: string,
+    namespace: string
+  ) {
     this.opts = opts;
     this.runtime = runtime;
+
+    // need to make sure it is safe
+    this._locale = this.getSafeLocale(locale);
+    this._namespace = namespace;
   }
 
   // helper functions exposed here
@@ -153,36 +175,31 @@ export class I18nChain<T extends GenericGeneratedType> {
     return this.runtime.utils.getLink(this.locale, url);
   }
 
-  // opts accesser
-  get fallbackLocale(): string {
-    return this.opts.fallbackLocale;
-  }
+  // opts some accessors
   get locale(): string {
-    return this.opts.locale;
+    return this._locale;
+  }
+
+  get namespace(): string {
+    return this.namespace;
   }
   get dir(): string {
     // TODO this is not complete
 
-    if (this.opts.locale == "ar") return "rtl";
+    if (this._locale == "ar") return "rtl";
 
     return "lrt";
   }
   get allLocales(): string[] {
     return this.opts.locales;
   }
-  get otherLocales(): string[] {
-    return this.opts.locales.filter((v) => v !== this.opts.locale);
-  }
-  get namespace(): string {
-    return this.opts.namespace.join(this.opts.nsSeparator);
-  }
-  get namespaceArray(): string[] {
-    return this.opts.namespace;
+  get fallbackLocale(): string {
+    return this.opts.fallbackLocale;
   }
 
-  private getTranslationCacheKey(locale: string, fullNamespace: string[]) {
-    return `${locale}_${fullNamespace.join(":")}`;
-  }
+  // private getTranslationCacheKey(locale: string, namespace: string) {
+  //   return `${locale}_${namespace}`;
+  // }
 
   public getSafeLocale(locale: string | undefined | null) {
     const isOk = locale && this.opts.locales.includes(locale);
@@ -195,15 +212,16 @@ export class I18nChain<T extends GenericGeneratedType> {
     return isOk ? locale : this.opts.fallbackLocale;
   }
 
-  private enterNamespace(newNamespace: string[]) {
-    this.opts.namespace.push(...newNamespace);
-    // this.opts.namespace = opts.namespace.split(this.opts.nsSeparator);
-  }
+  // this is only available at the root
+  // private enterNamespace(newNamespace: string[]) {
+  //   this.opts.namespace.push(...newNamespace);
+  //   // this.opts.namespace = opts.namespace.split(this.opts.nsSeparator);
+  // }
 
   private addTranslationFunctions(
     locale: string,
     // namespace: string,
-    fullNamespace: string[],
+    fullNamespace: string,
     obj: Record<string, any>,
     parentKey = ""
   ) {
@@ -225,11 +243,7 @@ export class I18nChain<T extends GenericGeneratedType> {
       } else {
         // Leaf node found, add it to the result map
         // namespace will 100% be defined
-        const fullKey =
-          this.getTranslationCacheKey(locale, fullNamespace) +
-          ":" +
-          parentKey +
-          key;
+        const fullKey = `${locale}_${fullNamespace}${this.opts.nsSeparator}${parentKey}${key}`;
         const value = obj[key];
         this.runtime.translateFns.set(
           fullKey,
@@ -243,10 +257,10 @@ export class I18nChain<T extends GenericGeneratedType> {
   protected async loadSingleTranslation(
     // relativeNamespace: string
     locale: string,
-    fullNamespace: string[]
+    namespace: string
   ): Promise<boolean> {
     // const cacheKey = this.getCacheKey()
-    const cacheKey = this.getTranslationCacheKey(locale, fullNamespace);
+    const cacheKey = `${locale}_${namespace}`;
 
     if (this.runtime.loading.has(cacheKey)) {
       return this.runtime.loading.get(cacheKey)!;
@@ -254,27 +268,23 @@ export class I18nChain<T extends GenericGeneratedType> {
 
     const loadPromise = new Promise<boolean>((resolve) => {
       this.runtime.loader
-        .load(locale, fullNamespace, this.runtime.parser.extension)
+        .load(locale, namespace, this.runtime.parser.extension)
         .then((rawData) => {
-          if (rawData instanceof I18nError) {
-            this.runtime.eventHandler.handleError(rawData);
-            return resolve(false);
-          }
-
           const parsedTranslation = this.runtime.parser.parse(rawData);
           this.addTranslationFunctions(
             locale,
-            fullNamespace,
+            namespace,
             parsedTranslation,
             ""
           );
           this.runtime.loaded.add(cacheKey); // add it to loaded, just for now
           resolve(true);
         })
-
         .catch((err: any) => {
           // log that it fails
           this.runtime.eventHandler.handleError(err);
+
+          // TODO remove this
           console.error("failed to load translation", err); // but could also fails in addTranslationFunctions
 
           resolve(false);
@@ -286,40 +296,52 @@ export class I18nChain<T extends GenericGeneratedType> {
 
   // USER FACING FUNCTIONS
 
-  public changeLocale(newLocale: string) {
+  public setLocale(newLocale: string) {
     // TODO also load all the new translations needed if locale is changed.
     const safeLocale = this.getSafeLocale(newLocale);
-    this.opts.locale = safeLocale;
+    this._locale = safeLocale;
   }
 
-  public t<Key extends keyof T["t"]>(relativePath: Key, args?: T["t"][Key]) {
-    // add the namespace here
-
-    // this will add current scopes namespaces if needed
-    // no namespace is not possible, so this is okay
-
-    // this.getTranslationCacheKey(this.locale, )
+  private t_internal(locale: string, relativePath: string, args?: TArgs) {
     const fullyQuantified =
-      (this.opts.namespace.length > 0
-        ? this.opts.namespace.join(this.opts.nsSeparator) +
-          this.opts.nsSeparator
-        : "") + (relativePath as string);
+      (this._namespace ? this._namespace + this.opts.nsSeparator : "") +
+      (relativePath as string);
 
-    const cacheKey = this.locale + "_" + fullyQuantified;
+    const cacheKey = locale + "_" + fullyQuantified;
 
     const translateFn = this.runtime.translateFns.get(cacheKey);
 
     if (!translateFn) {
       const args = {
-        locale: this.locale,
-        namespace: [], // TODO,
+        locale,
+        namespace: this._namespace, // TODO,
         fullyResolvedPath: fullyQuantified,
       };
       this.runtime.eventHandler.handleEvent("translationNotFound", args);
       return this.runtime.formatNotFound(args);
     }
 
-    return translateFn(args || ({} as any));
+    return translateFn(args || undefined);
+  }
+
+  public t_locale<Key extends keyof T["t"]>(
+    locale: string,
+    relativePath: Key,
+    args?: T["t"][Key]
+  ) {
+    return this.t_internal(
+      this.getSafeLocale(locale),
+      relativePath as string,
+      args || (undefined as any)
+    );
+  }
+
+  public t<Key extends keyof T["t"]>(relativePath: Key, args?: T["t"][Key]) {
+    return this.t_internal(
+      this._locale,
+      relativePath as string,
+      args || (undefined as any)
+    );
   }
 
   // TODO this needs a different type, as n allows intermediaries
@@ -329,27 +351,21 @@ export class I18nChain<T extends GenericGeneratedType> {
     // ns is relative to the current scope!
 
     if (typeof keyOrKeys === "string")
-      return this.loadSingleTranslation(this.locale, [
-        ...this.opts.namespace,
-        ...keyOrKeys.split(this.opts.nsSeparator),
-      ]);
+      return this.loadSingleTranslation(this.locale, keyOrKeys);
 
     // const realKeys = Array.isArray(keys) ? keys : [keys];
 
     const res = await Promise.all(
       (keyOrKeys as string[]).map((key) =>
-        this.loadSingleTranslation(this.locale, [
-          ...this.opts.namespace,
-          ...key.split(this.opts.nsSeparator),
-        ])
+        this.loadSingleTranslation(this.locale, key)
       )
     );
     return res.every((v) => v == true);
   }
 
-  // loads the current namespace
+  // loads the current namespace, only available in translations!
   public async loadRootScopeTranslation() {
-    if (!this.opts.namespace) {
+    if (!this._namespace) {
       this.runtime.eventHandler.handleEvent(
         "error",
         "Must be inside a namespace to load own root scope translation."
@@ -359,7 +375,7 @@ export class I18nChain<T extends GenericGeneratedType> {
 
     const loadRes = await this.loadSingleTranslation(
       this.locale,
-      this.opts.namespace
+      this._namespace
     );
 
     return loadRes;
@@ -382,20 +398,13 @@ export class I18nChain<T extends GenericGeneratedType> {
     namespace?: Key;
   }) {
     // const optsCopy = { ...this.opts };
-    const optsCopy = structuredClone(this.opts); // this is needed to copy over namespace array!
 
-    const newChain = new I18nChain(optsCopy, this.runtime);
-
-    if (opts.locale) {
-      // TODO this can reload everything, work in the promise
-      newChain.changeLocale(opts.locale);
-    }
-    if (opts.namespace) {
-      const parts = (opts.namespace as string).split(this.opts.nsSeparator);
-      newChain.enterNamespace(parts);
-    }
-
-    // TODO can auto
+    const newChain = new I18nChain(
+      this.opts,
+      this.runtime,
+      opts.locale || this._locale,
+      opts.namespace || (this._namespace as any)
+    );
 
     return newChain;
   }
@@ -408,27 +417,22 @@ export class I18nInstance<
   T extends GenericGeneratedType = GenericGeneratedType
 > extends I18nChain<T> {
   constructor(opts: I18nOpts) {
+    // do some preliminary checks
+
+    if (!opts.locales.includes(opts.fallbackLocale))
+      throw new Error("fallback locale must be define in locales");
+
+    // this makes a full copy
     const innerOpts = processOpts(opts);
     const eventOpts = processEventOpts(opts.events);
-    const runtime: I18nRuntime = {
-      loader: opts.loader,
-      parser: opts.parser,
-      formatter: opts.formatter,
-      eventHandler: new I18nEventHandler(eventOpts),
-      //   cache: new Cache(),
-      loading: new Map(),
-      loaded: new Set(),
-      eventCache: new Set(),
-      formatNotFound:
-        opts.formatNotFound || (({ fullyResolvedPath }) => fullyResolvedPath),
-      utils: opts.utils || new PathnameUtls(),
-      translateFns: new Map<string, FormatTranslation>(),
-    };
+    const runtime = createRuntime(opts, eventOpts);
 
-    // runtime.loader.init(innerOpts, runtime); // bad circular dependencies?
-
-    // create new runtime too
-    super(innerOpts, runtime);
+    const startLocale =
+      opts.currentLocale && opts.locales.includes(opts.currentLocale)
+        ? opts.currentLocale
+        : opts.fallbackLocale;
+    // start the intiial copy
+    super(innerOpts, runtime, startLocale, "");
   }
 
   // can scope only once
@@ -441,15 +445,17 @@ export class I18nInstance<
   // like ability to start a cli process?
 
   async loadAllTranslations(): Promise<boolean> {
-    const list = await this.runtime.loader.list();
+    throw new Error("not reimplemented yet");
 
-    const promises = list.map(({ locale, namespace }) =>
-      this.loadSingleTranslation(locale, namespace)
-    );
+    // const list = await this.runtime.loader.list();
 
-    const res = await Promise.all(promises);
+    // const promises = list.map(({ locale, namespace }) =>
+    //   this.loadSingleTranslation(locale, namespace)
+    // );
 
-    return res.every((v) => v == true);
+    // const res = await Promise.all(promises);
+
+    // return res.every((v) => v == true);
   }
 
   attachToCli() {

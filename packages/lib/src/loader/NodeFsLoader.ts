@@ -56,9 +56,9 @@ export default class NodeFsLoader extends BaseLoader {
 
   async load(
     locale: string,
-    namespace: string[],
+    namespace: string,
     extension: string
-  ): Promise<string | I18nError> {
+  ): Promise<string> {
     const relativePath = this.formatPath(locale, namespace, extension);
 
     try {
@@ -76,9 +76,13 @@ export default class NodeFsLoader extends BaseLoader {
       // console.log("fs load error", error);
 
       // need ability yo proxy the actual error
-      return new I18nError("loadFailure", {
+      throw new I18nError("loadFailure", {
         operation: "load",
-        targetObj: relativePath,
+        targetObj: {
+          locale,
+          namespace,
+          extension,
+        },
         reason: err?.message, // okay?
       });
     }
@@ -86,11 +90,10 @@ export default class NodeFsLoader extends BaseLoader {
 
   async list(): Promise<ListResult[]> {
     // const deinterp = makePathDeinterpolator(this.folder, "/");
+    const rootPath = safePathJoin(this.rootDir, this.folder);
     const deinterp = makeMinDeinterpolator("/");
 
-    const actualPath = safePathJoin(this.rootDir, this.folder);
-
-    const res = await fs.readdir(actualPath, {
+    const res = await fs.readdir(rootPath, {
       recursive: true,
     });
 
