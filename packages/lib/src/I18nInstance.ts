@@ -197,9 +197,24 @@ export class I18nChain<T extends GenericGeneratedType> {
     this._locale = safeLocale;
   }
 
-  // TODO also load all the new translations needed if locale is changed.
-  public changeLocaleAndReloadTranslations(newLocale: string) {
-    throw new Error("Method not implemented.");
+  public async changeLocaleAndReloadTranslations(newLocale: string) {
+    newLocale = this.getSafeLocale(newLocale);
+    const oldLocale = this._locale;
+
+    if (newLocale == this._locale) return;
+
+    const current = this.runtime.loaded.keys();
+    const translationsToLoad: string[] = [];
+
+    for (const i of current) {
+      const [thisLocale, translation] = i.split("_");
+      if (thisLocale != oldLocale) continue;
+
+      translationsToLoad.push(translation);
+    }
+
+    this._locale = newLocale;
+    return this.loadTranslations(translationsToLoad);
   }
 
   private addTranslationFunctions(
@@ -316,14 +331,13 @@ export class I18nChain<T extends GenericGeneratedType> {
   }
 
   // TODO this needs a different type, as n allows intermediaries
-  public async loadTranslation<Key extends keyof T["others"]>(
-    keyOrKeys: Key | Key[]
-  ) {
-    if (typeof keyOrKeys === "string")
-      return this.loadSingleTranslation(this.locale, keyOrKeys);
+  public async loadTranslation<Key extends keyof T["others"]>(key: Key) {
+    return this.loadSingleTranslation(this.locale, key as string);
+  }
 
+  public async loadTranslations<Key extends keyof T["others"]>(keys: Key[]) {
     const res = await Promise.all(
-      (keyOrKeys as string[]).map((key) =>
+      (keys as string[]).map((key) =>
         this.loadSingleTranslation(this.locale, key)
       )
     );

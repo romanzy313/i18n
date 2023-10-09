@@ -104,7 +104,6 @@ describe("i18n", () => {
   });
 
   test("getting sub i18n", async () => {
-    notFound();
     const defScope = i18n.getSubI18n({
       // this should autoload it??
       namespace: "default",
@@ -115,6 +114,19 @@ describe("i18n", () => {
     defScope.setLocale("ru");
     await defScope.loadRootScopeTranslation();
     expect(defScope.t("yes")).toBe("да");
+  });
+
+  test("change locale and reload", async () => {
+    i18n.setLocale("en");
+    await i18n.loadTranslations(["hello", "default"]);
+
+    expect(i18n.t_locale("en", "default:no")).toBe("no");
+    expect(i18n.t_locale("en", "hello:nested.key")).toBe("hello");
+    expect(i18n.t_locale("ru", "default:no")).toBe("***not found***");
+
+    await i18n.changeLocaleAndReloadTranslations("ru");
+    expect(i18n.t_locale("ru", "default:no")).toBe("нет");
+    expect(i18n.t_locale("ru", "hello:nested.key")).toBe("привет");
   });
 
   test("memloader lists properly", async () => {
