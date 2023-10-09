@@ -4,42 +4,6 @@ import { I18nInstance } from "./I18nInstance";
 import MemLoader from "./loader/MemLoader";
 import ICUFormatter from "./formatter/ICUFormatter";
 import JsonParser from "./parser/JsonParser";
-import { CompositeKeyDef, GenericGeneratedType } from ".";
-
-type DefaultTranslation = CompositeKeyDef<
-  "default",
-  {
-    yes: {};
-    no: {};
-    photos: {
-      count: number;
-    };
-  }
->;
-
-type NestedTranslation = CompositeKeyDef<
-  "hello:nested",
-  {
-    "namespace.key": {};
-  }
->;
-
-// export interface TestGeneratedType extends GenericGeneratedType {
-//   t: {} & DefaultTranslation["keys"] & NestedTranslation["keys"];
-//   n: {
-//     default: {
-//       t: DefaultTranslation["def"];
-//       n: {};
-//       l: [];
-//     };
-//     "hello:nested": {
-//       t: NestedTranslation["def"];
-//       n: {};
-//       l: [];
-//     };
-//   };
-//   l: ["default", "hello:nested"];
-// }
 
 export type TestGeneratedType = any;
 

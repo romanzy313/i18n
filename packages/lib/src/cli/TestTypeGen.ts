@@ -1,4 +1,4 @@
-export type TestTypes = {
+export type TestTypeGen = {
 	"default:yes": {}
 	"default:no": {}
 	"default:photos": {
@@ -6,3 +6,4 @@ export type TestTypes = {
 	}
 	"hello:nested.key": {}
 }
+export default TestTypeGen;

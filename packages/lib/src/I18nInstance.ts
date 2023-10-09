@@ -1,13 +1,12 @@
 // this is the core class
 
-import { GenericGeneratedType, TArgs } from ".";
+import { GenericGeneratedType, TArgs } from "./types";
 import {
   I18nEventHandler,
   I18nEventOptions,
   I18nEvents,
   NotFoundArgs,
 } from "./EventHandler";
-import { I18nError } from "./I18nError";
 import { BaseFormatter, FormatTranslation } from "./formatter/BaseFormatter";
 import { BaseLoader } from "./loader/BaseLoader";
 import BaseParser from "./parser/BaseParser";
@@ -146,6 +145,9 @@ export type I18nScope<T extends GenericGeneratedType> = Omit<
   I18nChain<T>,
   "opts" | "runtime"
 >;
+
+// only root one has access to load namspeace, it returns self!!
+// export class
 
 export class I18nChain<T extends GenericGeneratedType> {
   public opts: InnerI18nOpts; // public for now
@@ -324,10 +326,10 @@ export class I18nChain<T extends GenericGeneratedType> {
     return translateFn(args || undefined);
   }
 
-  public t_locale<Key extends keyof T["t"]>(
+  public t_locale<Key extends keyof T["this"]>(
     locale: string,
     relativePath: Key,
-    args?: T["t"][Key]
+    args?: T["this"][Key]
   ) {
     return this.t_internal(
       this.getSafeLocale(locale),
@@ -336,7 +338,10 @@ export class I18nChain<T extends GenericGeneratedType> {
     );
   }
 
-  public t<Key extends keyof T["t"]>(relativePath: Key, args?: T["t"][Key]) {
+  public t<Key extends keyof T["this"]>(
+    relativePath: Key,
+    args?: T["this"][Key]
+  ) {
     return this.t_internal(
       this._locale,
       relativePath as string,
@@ -345,7 +350,7 @@ export class I18nChain<T extends GenericGeneratedType> {
   }
 
   // TODO this needs a different type, as n allows intermediaries
-  public async loadTranslation<Key extends T["l"][number]>(
+  public async loadTranslation<Key extends keyof T["others"]>(
     keyOrKeys: Key | Key[]
   ) {
     // ns is relative to the current scope!
@@ -383,17 +388,23 @@ export class I18nChain<T extends GenericGeneratedType> {
     // return this.loadTranslation(path);
   }
 
-  public getSubI18n<Key extends keyof T["n"]>(opts: {
+  public getSubI18n<Key extends keyof T["others"]>(opts: {
+    locale: string | undefined | null;
+  }): this;
+  public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale: string | undefined | null;
     namespace: Key;
-  }): I18nChain<T["n"][typeof opts.namespace]>;
-  public getSubI18n<Key extends keyof T["n"]>(opts: {
+  }): I18nChain<{
+    this: T["others"][Key]; // was typeof opts.namespace
+    others: {};
+  }>;
+  public getSubI18n<Key extends keyof T["others"]>(opts: {
     namespace: Key;
-  }): I18nChain<T["n"][typeof opts.namespace]>;
-  public getSubI18n<Key extends keyof T["n"]>(opts: {
-    locale: string | undefined | null;
-  }): I18nChain<T>;
-  public getSubI18n<Key extends keyof T["n"]>(opts: {
+  }): I18nChain<{
+    this: T["others"][Key]; // was typeof opts.namespace
+    others: {};
+  }>;
+  public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale?: string | undefined | null;
     namespace?: Key;
   }) {
@@ -413,9 +424,7 @@ export class I18nChain<T extends GenericGeneratedType> {
 // const s: I18nScope<any> = new I18nChain<any>({} as any, {} as any);
 
 // s.
-export class I18nInstance<
-  T extends GenericGeneratedType = GenericGeneratedType
-> extends I18nChain<T> {
+export class I18nInstance<T extends GenericGeneratedType> extends I18nChain<T> {
   constructor(opts: I18nOpts) {
     // do some preliminary checks
 

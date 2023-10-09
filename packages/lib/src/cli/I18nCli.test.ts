@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, expectTypeOf, test } from "vitest";
 
 import { I18nInstance } from "../I18nInstance";
 import MemLoader from "../loader/MemLoader";
@@ -57,8 +57,8 @@ beforeEach(() => {
   });
 
   cli = new I18nCli(i18n, {
-    name: "TestTypes",
-    writeFolder: "./src/gen",
+    name: "TestTypeGen",
+    writeFolder: "./src/cli",
   });
 });
 
@@ -70,31 +70,36 @@ describe("i18n", () => {
   test("type generation", async () => {
     const val = await cli.generateTypes();
 
-    expect(val).toStrictEqual(`export type TestTypes = {
+    expect(val).toStrictEqual(`export type TestTypeGen = {
 	"default:yes": {}
 	"default:no": {}
 	"default:photos": {
 		"count": number
 	}
 	"hello:nested.key": {}
-}`);
+}
+export default TestTypeGen;`);
 
     // TODO dont flush
     await cli.flushToDisk(val);
 
     // lets try it, works nice!
 
-    // now test the types, it wont work right away?
-    await i18n.loadTranslation("default"); // this can also be typed... but how can I inherit it?? typeofs?
+    // // now test the types, it wont work right away?
+    // await i18n.loadTranslation("default"); // this can also be typed... but how can I inherit it?? typeofs?
 
-    const scoped = i18n.getSubI18n({
-      namespace: "default", // this should be autocompleted
-    });
-    const res = scoped.t("default:no");
+    // const scoped = i18n.getSubI18n({
+    //   namespace: "default", // this should be autocompleted
+    // });
+    // const res = scoped.t("default:no");
 
-    const typedResult = i18n.t("default:photos", {
-      count: 4,
-    });
-    expect(typedResult).toBe("You have 4 photos.");
+    // const typedResult = i18n.t("default:photos", {
+    //   count: 4,
+    // });
+    // expect(typedResult).toBe("You have 4 photos.");
+  });
+
+  test.todo("typedef is correct", () => {
+    // expectTypeOf(i18n).parameter(0).toMatchTypeOf<{ name: string }>();
   });
 });

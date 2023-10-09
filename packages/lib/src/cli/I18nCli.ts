@@ -5,6 +5,11 @@ import path from "path";
 import { I18nInstance } from "../I18nInstance";
 import { ListResult } from "../loader/BaseLoader";
 
+// here what i need to generate
+/**
+ *
+ */
+
 type KeyExpandResult = {
   key: string[];
   value: string;
@@ -64,7 +69,7 @@ type I18nCliOpts = {
 };
 
 export default class I18nCli {
-  constructor(public instance: I18nInstance, private opts: I18nCliOpts) {}
+  constructor(public instance: I18nInstance<any>, private opts: I18nCliOpts) {}
 
   generateFullType(singles: SingleKeyResult[]) {
     // export type Typename = {
@@ -75,6 +80,8 @@ export default class I18nCli {
       res += "\t" + this.generateSingleType(s);
     });
     res += "}";
+
+    res += `\nexport default ${this.opts.name};`;
 
     return res;
   }
@@ -112,7 +119,6 @@ export default class I18nCli {
     }
 
     const parsed = this.instance.runtime.parser.parse(raw);
-    console.log("got load res", parsed);
 
     const keyResults = toKeyResult(parsed as any);
 
