@@ -20,7 +20,7 @@
 
 export type InterpolatePathFn = (
   locale: string,
-  namespace: string[],
+  namespace: string,
   extension: string
 ) => string;
 
@@ -30,9 +30,9 @@ export const makePathInterpolator = (
 ): InterpolatePathFn => {
   // TODO need to remove trailing slashes of the endpoint path
 
-  return (locale: string, ns: string[], extension: string) => {
+  return (locale: string, ns: string, extension: string) => {
     // this can be a bit more optimized
-    const base = [endpoint, locale, ...ns].join(separator);
+    const base = [endpoint, locale, ns].join(separator);
 
     if (!extension) return base;
 
@@ -42,73 +42,82 @@ export const makePathInterpolator = (
 
 export type DeinterpolatePathFn = (path: string) => {
   locale: string;
-  namespace: string[];
+  namespace: string;
   extension: string;
 } | null;
 
-export function makePathDeinterpolator(
-  rootPath: string,
+// export function makePathDeinterpolator(
+//   rootPath: string,
+//   separator: string
+// ): DeinterpolatePathFn {
+//   // escape given path
+//   const filtered = new RegExp(
+//     rootPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + `\\/(.+)`,
+//     "i"
+//   );
+
+//   console.log("filtered deinterlaced path", filtered);
+
+//   throw new Error("not reimplemented yet");
+
+//   // this one needs to remove root path
+//   return (path: string) => {
+//     const res = path.match(filtered);
+//     // const res = filtered.match(path);
+
+//     if (!res) return null;
+
+//     if (res.length < 2) return null;
+
+//     const parts = res[1].split(separator);
+
+//     if (parts.length < 2) return null;
+
+//     // const locale = parts[0];
+//     const [locale] = parts.splice(0, 1);
+//     const [last] = parts.splice(parts.length - 1, 1);
+
+//     // const last = parts[parts.length - 1];
+//     const [file, extension] = last.split(".");
+
+//     // const ns = parts.filter
+
+//     parts.push(file);
+
+//     return {
+//       locale,
+//       namespace: file, // was parts
+//       extension: extension || "",
+//     };
+//   };
+// }
+
+// we are given a globalPath like /var/www/project/locale/en/translation.json
+// need to extract locale from it
+// root path provided is /var/www/project/locale/ not sure about trailing one
+
+export function makeMinDeinterpolator(
+  // rootPath: string,
   separator: string
 ): DeinterpolatePathFn {
   // escape given path
-  const filtered = new RegExp(
-    rootPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + `\\/(.+)`,
-    "i"
-  );
+
+  // TODO check if trailing slash is included
+  // const cutoffLength = rootPath.length;
 
   return (path: string) => {
-    const res = path.match(filtered);
-    // const res = filtered.match(path);
+    // can maybe use regex instead?
+    // const extracted = path.substring(cutoffLength); // locale/namespace.extension
+    const extracted = path;
+    const [locale, others] = extracted.split(separator);
 
-    if (!res) return null;
+    if (!others) return null;
 
-    if (res.length < 2) return null;
-
-    const parts = res[1].split(separator);
-
-    if (parts.length < 2) return null;
-
-    // const locale = parts[0];
-    const [locale] = parts.splice(0, 1);
-    const [last] = parts.splice(parts.length - 1, 1);
-
-    // const last = parts[parts.length - 1];
-    const [file, extension] = last.split(".");
-
-    // const ns = parts.filter
-
-    parts.push(file);
+    const [namespace, extension] = others.split(".");
 
     return {
       locale,
-      namespace: parts,
-      extension: extension || "",
-    };
-  };
-}
-
-export function makeMinDeinterpolator(separator: string): DeinterpolatePathFn {
-  // escape given path
-
-  return (path: string) => {
-    const parts = path.split(separator);
-
-    if (parts.length < 2) return null;
-
-    // const locale = parts[0];
-    const [locale] = parts.splice(0, 1);
-    const [last] = parts.splice(parts.length - 1, 1);
-
-    // const last = parts[parts.length - 1];
-    const [file, extension] = last.split(".");
-
-    // const ns = parts.filter
-
-    parts.push(file);
-
-    return {
-      locale,
-      namespace: parts,
+      namespace,
       extension: extension || "",
     };
   };

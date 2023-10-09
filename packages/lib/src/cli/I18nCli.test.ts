@@ -5,123 +5,123 @@ import MemLoader from "../loader/MemLoader";
 import ICUFormatter from "../formatter/ICUFormatter";
 import JsonParser from "../parser/JsonParser";
 import I18nCli from "./I18nCli";
-// import type { TestTypes } from "../gen/TestTypes";
-import { TestChain, TestGen2 } from "./typeTests";
+import TestTypeGen from "./TestTypeGen";
 
-let i18n: I18nInstance<any>;
+// TODO try expectTypeOf,
+
+let i18n: I18nInstance<TestTypeGen>;
 let cli: I18nCli;
 
 beforeEach(() => {
-  i18n = new I18nInstance<any>({
-    locales: ["en", "ru"],
-    fallbackLocale: "en",
-    nsSeparator: ":",
-    keySeparator: ".",
-    loader: new MemLoader({
-      en: {
-        default: MemLoader.translation({
-          yes: "yeees",
-          no: "no",
-          photos: `You have {count, plural,
+  const loader = new MemLoader();
+  loader.register("en", "default", {
+    yes: "yeees",
+    no: "no",
+    photos: `You have {count, plural,
                   =0 {no photos.}
                   =1 {1 photo.}
                   other {# photos.}
                 }`,
-        }),
-        hello: {
-          nested: MemLoader.translation({
-            namespace: {
-              key: "hello",
-            },
-          }),
-        },
+  });
+  loader.register("en", "hello", () =>
+    Promise.resolve({
+      nested: {
+        key: "hello",
       },
-      ru: {
-        default: MemLoader.translation({
-          yes: "да",
-          no: "нет",
-          // this is incorrect actually
-          photos: `Вы имеете {count, plural,
+    })
+  );
+  loader.registerMany("ru", {
+    default: {
+      yes: "да",
+      no: "нет",
+      // this is incorrect actually
+      photos: `Вы имеете {count, plural,
                   =0 {nothing.}
                   =1 {1 книга.}
                   other {# книг.}
                 }`,
-        }),
-        hello: {
-          nested: MemLoader.translation({
-            namespace: {
-              key: "привет",
-            },
-          }),
-        },
+    },
+    hello: {
+      nested: {
+        key: "привет",
       },
-    }),
+    },
+  });
+
+  i18n = new I18nInstance<TestTypeGen>({
+    locales: ["en", "ru"],
+    fallbackLocale: "en",
+    nsSeparator: ":",
+    keySeparator: ".",
+    loader,
     formatter: new ICUFormatter(),
     parser: new JsonParser(),
   });
 
   cli = new I18nCli(i18n, {
-    name: "TestTypes",
-    writeFolder: "./src/gen",
+    name: "TestTypeGen",
+    writeFolder: "./src/cli",
   });
 });
 
 describe("i18n", () => {
-  test("type test", () => {
-    const root = new TestChain<TestGen2>();
-    root.locale = "en";
-
-    const gRes = root.t("ns1:hello", {
-      name: "bob",
-    });
-
-    root.loadNs("ns1");
-
-    const ns1Root = root.getSubI18n({
-      ns: "ns1",
-      locale: "ru",
-    });
-
-    ns1Root.loadNs("ns2");
-
-    root.loadNs(["ns1", "ns1:ns2"]);
-
-    const ans1 = ns1Root.t("hello", {
-      name: "alex",
-    });
-    // ns1Res.t("hello", {})
-    const ans2 = ns1Root.t("world");
-
-    // TODO can do vitest type checking
-
-    console.log(gRes);
-    console.log(ans1);
-    console.log(ans2);
-
-    expect(true).toBe(true);
+  test.todo("type test", () => {
+    // TODO vite typechecking of the TestTypes (after its been generated above)
+    // test actual usage, that it stricktly types them
   });
   test("type generation", async () => {
     const val = await cli.generateTypes();
-    console.log("Generated type:\n", val);
 
-    // dont flush
+    console.log("generated type", val);
+
+    // TODO dont flush
     await cli.flushToDisk(val);
 
-    // lets try it, works nice!
+    expect(val).toContain("DO NOT MODIFY");
 
-    // now how with scopes
-    await i18n.loadTranslation("default"); // this can also be typed... but how can I inherit it?? typeofs?
+    expect(val).toContain("export default TestTypeGen;");
 
-    const scoped = i18n.getSubI18n({
-      namespace: "default", // this should be autocompleted
-    });
-    const res = scoped.t("default:no");
+    // check the main type
+    expect(val).toContain(`export type TestTypeGen = {
+  "this": {
+    [key in keyof Default as \`default:\${key}\`]: Default[key]
+  } & {
+    [key in keyof Hello as \`hello:\${key}\`]: Hello[key]
+  };
+  "others": {
+    "default": Default;
+    "hello": Hello;
+  };
+}`);
+    // base subtype
+    expect(val).toContain(`export type Default = {
+  "yes": {};
+  "no": {};
+  "photos": {
+    "count": number;
+  };
+}`);
 
-    console.log("RES", res);
+    // and nested key
+    expect(val).toContain(`export type Hello = {
+  "nested.key": {};
+}`);
 
-    const typedResult = i18n.t("default:photos", {
+    // just validation that types are accepted
+
+    await i18n.loadTranslation("default");
+    i18n.t("default:photos", {
       count: 4,
     });
-    expect(typedResult).toBe("You have 4 photos.");
+
+    const res = i18n.getSubI18n({ namespace: "default" }).t("photos", {
+      count: 33,
+    });
+
+    expect(res).toBe("You have 33 photos.");
+  });
+
+  test("typedef is correct", () => {
+    // expectTypeOf(i18n.t).parameter(0).toMatchTypeOf<{ name: string }>();
   });
 });
