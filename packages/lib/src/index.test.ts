@@ -6,9 +6,7 @@ import ICUFormatter from "./formatter/ICUFormatter";
 import JsonParser from "./parser/JsonParser";
 import BaseUtils from "./utils/BaseUtils";
 
-export type TestGeneratedType = any;
-
-let i18n: I18nInstance<TestGeneratedType>;
+let i18n: I18nInstance<any, any>;
 let notFound = vi.fn();
 
 beforeEach(() => {
@@ -48,7 +46,7 @@ beforeEach(() => {
     },
   });
 
-  i18n = new I18nInstance<TestGeneratedType>({
+  i18n = new I18nInstance<any, BaseUtils>({
     locales: ["en", "ru"],
     fallbackLocale: "en",
     loader,
@@ -60,6 +58,8 @@ beforeEach(() => {
     },
     utils: new BaseUtils(),
   });
+
+  // i18n2.utils.
 });
 
 afterEach(() => {

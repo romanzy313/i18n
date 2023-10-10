@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { I18nInstance } from "../I18nInstance";
+import { I18nInstance, I18nRuntime, InnerI18nOpts } from "../I18nInstance";
 import { ListResult } from "../loader/BaseLoader";
 import { renderGeneratedType } from "./generateFns";
 
@@ -20,12 +20,19 @@ type I18nCliOpts = {
 };
 
 export default class I18nCli {
-  constructor(public instance: I18nInstance<any>, private opts: I18nCliOpts) {}
+  private runtime: I18nRuntime;
+  private instanceOtps: InnerI18nOpts;
+  constructor(instance: I18nInstance<any, any>, public cliOpts: I18nCliOpts) {
+    // @ts-expect-error
+    this.runtime = instance.runtime;
+    // @ts-expect-error
+    this.instanceOtps = instance.opts;
+  }
 
   async processTranslation(tr: ListResult): Promise<SingleNamespaceResultObj> {
     let raw: string;
     try {
-      raw = await this.instance.runtime.loader.load(
+      raw = await this.runtime.loader.load(
         tr.locale,
         tr.namespace,
         tr.extension
@@ -34,7 +41,7 @@ export default class I18nCli {
       throw error;
     }
 
-    const parsed = this.instance.runtime.parser.parse(raw);
+    const parsed = this.runtime.parser.parse(raw);
 
     const keyResults = extractObjectKeyValue(parsed as any);
 
@@ -44,11 +51,8 @@ export default class I18nCli {
     };
 
     keyResults.forEach((v) => {
-      const flatKey = v.key.join(this.instance.opts.keySeparator);
-      const typeValue = this.instance.runtime.formatter.getType(
-        v.value,
-        tr.locale
-      );
+      const flatKey = v.key.join(this.instanceOtps.keySeparator);
+      const typeValue = this.runtime.formatter.getType(v.value, tr.locale);
       results.obj[flatKey] = typeValue;
     });
 
@@ -56,18 +60,18 @@ export default class I18nCli {
   }
 
   async generateTypes() {
-    const loader = this.instance.runtime.loader;
+    const loader = this.runtime.loader;
     let items = await loader.list();
 
-    items = items.filter((v) => v.locale !== this.instance.opts.fallbackLocale);
+    items = items.filter((v) => v.locale !== this.instanceOtps.fallbackLocale);
 
     const batchProcessed = await Promise.all(
       items.map(this.processTranslation.bind(this))
     );
 
     const full = renderGeneratedType(
-      this.opts.name,
-      this.instance.opts.nsSeparator,
+      this.cliOpts.name,
+      this.instanceOtps.nsSeparator,
       batchProcessed.map((v) => {
         return {
           translationFile: v.namespace,
@@ -84,8 +88,8 @@ export default class I18nCli {
   }
 
   async flushToDisk(value: string) {
-    const folder = path.resolve(this.opts.writeFolder);
-    const dest = path.join(folder, `${this.opts.name}.ts`);
+    const folder = path.resolve(this.cliOpts.writeFolder);
+    const dest = path.join(folder, `${this.cliOpts.name}.ts`);
 
     await fs.writeFile(dest, value);
   }

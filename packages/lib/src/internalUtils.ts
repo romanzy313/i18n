@@ -44,3 +44,16 @@ export function makeMinDeinterpolator(separator: string): DeinterpolatePathFn {
     };
   };
 }
+
+export function objectToHash(obj: Record<string, any>): string {
+  const hashParts: string[] = [];
+
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const value = obj[key];
+      hashParts.push(`${key}:${value}`);
+    }
+  }
+
+  return hashParts.join("&");
+}

@@ -1,52 +1,36 @@
 // i want easy extension though
 
-import { I18nRuntime, InnerI18nOpts } from "..";
+import { UtilContext, UtilDefinition } from "./types";
 
-export type I18nUtils<T extends BaseUtils> = Omit<T, "clone">;
-
-// idea is that your own utils appear there
-// maybe they have full access to the options and runtime?
-
-export default class BaseUtils {
-  protected locale: string = "";
-  protected opts!: InnerI18nOpts;
-  protected runtime!: I18nRuntime;
+export default class BaseUtils implements UtilDefinition {
+  [key: string]: (firstArg: UtilContext, ...restArgs: any[]) => any;
 
   // TODO gotta implement them all
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl
   // Intl.RelativeTimeFormat
   // Intl.ListFormat
 
-  displayNames(options: Intl.DisplayNamesOptions): Intl.DisplayNames {
-    return new Intl.DisplayNames(this.locale, options);
+  displayNames(
+    ctx: UtilContext,
+    options: Intl.DisplayNamesOptions
+  ): Intl.DisplayNames {
+    return new Intl.DisplayNames(ctx.locale, options);
   }
 
   // these are cached by their use
-  dateTimeFormat(): Intl.DateTimeFormat {
-    return new Intl.DateTimeFormat(this.locale);
+  dateTimeFormat(ctx: UtilContext): Intl.DateTimeFormat {
+    return new Intl.DateTimeFormat(ctx.locale);
   }
 
-  numberFormat(options: Intl.DisplayNamesOptions): Intl.NumberFormat {
-    return new Intl.NumberFormat(this.locale, options);
+  numberFormat(
+    ctx: UtilContext,
+    options: Intl.DisplayNamesOptions
+  ): Intl.NumberFormat {
+    return new Intl.NumberFormat(ctx.locale, options);
   }
 
-  clone(newLocale: string, opts: InnerI18nOpts, runtime: I18nRuntime): this {
-    if (this.locale == newLocale) return this; // just give itself back
-
-    if (!this.opts) this.opts = opts;
-
-    if (!this.runtime) this.runtime = runtime;
-
-    const clonedInstance: this = Object.create(Object.getPrototypeOf(this));
-    Object.assign(clonedInstance, this);
-
-    clonedInstance.locale = newLocale;
-
-    return clonedInstance;
-  }
-
-  get dir(): string {
-    return getLocaleDirection(this.locale);
+  dir(ctx: UtilContext): string {
+    return getLocaleDirection(ctx.locale);
   }
 }
 

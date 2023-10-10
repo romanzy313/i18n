@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, expectTypeOf, test } from "vitest";
 
 import { I18nInstance } from "../I18nInstance";
 import MemLoader from "../loader/MemLoader";
@@ -63,10 +63,21 @@ beforeEach(() => {
 });
 
 describe("i18n", () => {
-  test.todo("type test", () => {
+  test("type test", () => {
     // TODO vite typechecking of the TestTypes (after its been generated above)
     // test actual usage, that it stricktly types them
     // try vi.expectTypeOf,
+
+    expectTypeOf(i18n.t)
+      .parameter(0)
+      .toMatchTypeOf<
+        "default:yes" | "default:no" | "default:photos" | "hello:nested.key"
+      >();
+
+    // this does not prove anything, as we dont define the first param
+    expectTypeOf(i18n.t)
+      .parameter(1)
+      .toMatchTypeOf<{} | { count: number } | undefined>();
   });
   test("type generation", async () => {
     const val = await cli.generateTypes();
@@ -116,9 +127,5 @@ describe("i18n", () => {
     });
 
     expect(res).toBe("You have 33 photos.");
-  });
-
-  test("typedef is correct", () => {
-    // expectTypeOf(i18n.t).parameter(0).toMatchTypeOf<{ name: string }>();
   });
 });

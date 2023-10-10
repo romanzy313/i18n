@@ -10,7 +10,8 @@ import {
 import { BaseFormatter, FormatTranslation } from "./formatter/BaseFormatter";
 import { BaseLoader } from "./loader/BaseLoader";
 import BaseParser from "./parser/BaseParser";
-import BaseUtils, { I18nUtils } from "./utils/BaseUtils";
+import { UtilContext, WrappedUtils } from "./utils/types";
+import { UtilDefinition } from "./utils/types";
 
 // cache is its own class
 export type I18nRuntime = {
@@ -22,9 +23,10 @@ export type I18nRuntime = {
   loading: Map<string, Promise<boolean>>;
   loaded: Set<string>; //
   eventCache: Set<string>;
+  utilCache: Map<string, UtilDefinition>; // TODO
   formatNotFound: (args: NotFoundArgs) => string;
   translateFns: Map<string, FormatTranslation>;
-  utils: BaseUtils | null;
+  utils: UtilDefinition | null;
 };
 
 export type InnerI18nOpts = {
@@ -35,14 +37,14 @@ export type InnerI18nOpts = {
   keySeparator: string;
 };
 
-export type I18nOpts = {
+export type I18nOpts<U extends UtilDefinition> = {
   locales: string[];
   fallbackLocale: string;
   loader: BaseLoader;
   parser: BaseParser;
   formatter: BaseFormatter;
 
-  utils?: I18nUtils<BaseUtils>;
+  utils?: U;
 
   // what to initialize current instance to. if not provided fallback locale is used
   currentLocale?: string;
@@ -59,7 +61,7 @@ export type I18nOpts = {
   formatNotFound?: (args: NotFoundArgs) => string;
 };
 
-function processOpts(opts: I18nOpts): InnerI18nOpts {
+function processOpts(opts: I18nOpts<any>): InnerI18nOpts {
   return {
     locales: opts.locales,
     fallbackLocale: opts.fallbackLocale,
@@ -101,7 +103,10 @@ function processEventOpts(eventOpts?: I18nEventOptions): I18nEvents {
   };
 }
 
-function createRuntime(opts: I18nOpts, eventOpts: I18nEvents): I18nRuntime {
+function createRuntime<U extends UtilDefinition>(
+  opts: I18nOpts<U>,
+  eventOpts: I18nEvents
+): I18nRuntime {
   return {
     loader: opts.loader,
     parser: opts.parser,
@@ -111,29 +116,32 @@ function createRuntime(opts: I18nOpts, eventOpts: I18nEvents): I18nRuntime {
     loading: new Map(),
     loaded: new Set(),
     eventCache: new Set(),
+    utilCache: new Map(),
     formatNotFound:
       opts.formatNotFound || (({ fullyResolvedPath }) => fullyResolvedPath),
-    utils: (opts.utils as BaseUtils) || null,
+    utils: opts.utils || null,
     translateFns: new Map<string, FormatTranslation>(),
   };
 }
 
 // TODO publically exposed scopes need to remove internal public fields from types
 export type I18nScope<T extends GenericGeneratedType> = Omit<
-  I18nChain<T>,
+  I18nChain<T, any>, // TODO?
   "opts" | "runtime"
 >;
 
 // only root one has access to load namspeace, it returns self!!
 // export class
 
-export class I18nChain<T extends GenericGeneratedType> {
-  public opts: InnerI18nOpts; // public for now
-  public runtime: I18nRuntime; // public for now
+export class I18nChain<
+  T extends GenericGeneratedType,
+  U extends UtilDefinition
+> {
+  protected opts: InnerI18nOpts; // public for now
+  protected runtime: I18nRuntime; // public for now
 
   private _locale: string;
   private _namespace: string;
-  private _utils: BaseUtils | null = null; // some sort of utisl
   // private translateFns =
 
   constructor(
@@ -148,20 +156,36 @@ export class I18nChain<T extends GenericGeneratedType> {
     // need to make sure it is safe
     this._locale = this.getSafeLocale(locale);
     this._namespace = namespace;
-    this._utils =
-      (this.runtime.utils as any)?.clone(
-        this._locale,
-        this.opts,
-        this.runtime
-      ) || null;
   }
 
-  get utils(): I18nUtils<BaseUtils> {
-    if (!this._utils) throw new Error("please define utils");
+  // TODO optimize this with cache using objectToHash
+  get utils(): WrappedUtils<U> {
+    const utils = this.runtime.utils as any;
+    if (!utils) throw new Error("Define utils to use them");
 
-    // then need to create them
+    const wrapper: Record<string, (...args: any[]) => any> = {};
 
-    return this._utils as BaseUtils;
+    const ctx: UtilContext = {
+      locale: this._locale,
+      options: this.opts,
+      runtime: this.runtime,
+    };
+
+    const keys = Object.getOwnPropertyNames(Object.getPrototypeOf(utils));
+
+    keys.forEach((key) => {
+      if (key == "constructor") return;
+
+      if (typeof utils[key] === "function") {
+        const originalFunc = utils[key].bind(utils);
+        const wrappedFunc: (...args: any[]) => any = (...args) => {
+          return originalFunc(ctx, ...args);
+        };
+        wrapper[key] = wrappedFunc;
+      }
+    });
+
+    return wrapper as WrappedUtils<U>;
   }
 
   // opts some accessors
@@ -379,17 +403,23 @@ export class I18nChain<T extends GenericGeneratedType> {
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale: string | undefined | null;
     namespace: Key;
-  }): I18nChain<{
-    this: T["others"][Key];
-    others: {};
-  }>;
+  }): I18nChain<
+    {
+      this: T["others"][Key];
+      others: {};
+    },
+    U
+  >;
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale?: string | undefined | null;
     namespace: Key;
-  }): I18nChain<{
-    this: T["others"][Key];
-    others: {};
-  }>;
+  }): I18nChain<
+    {
+      this: T["others"][Key];
+      others: {};
+    },
+    U
+  >;
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale: string | undefined | null;
   }): this;
@@ -408,8 +438,11 @@ export class I18nChain<T extends GenericGeneratedType> {
   }
 }
 
-export class I18nInstance<T extends GenericGeneratedType> extends I18nChain<T> {
-  constructor(opts: I18nOpts) {
+export class I18nInstance<
+  T extends GenericGeneratedType = any,
+  U extends UtilDefinition = any
+> extends I18nChain<T, U> {
+  constructor(opts: I18nOpts<U>) {
     // do some preliminary checks
     if (!opts.locales.includes(opts.fallbackLocale))
       throw new Error("fallback locale must be define in locales");

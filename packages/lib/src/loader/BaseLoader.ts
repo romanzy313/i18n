@@ -1,5 +1,3 @@
-import { I18nError } from "../I18nError";
-
 export type ListResult = {
   locale: string;
   namespace: string;
