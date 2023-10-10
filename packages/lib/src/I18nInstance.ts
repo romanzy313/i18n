@@ -10,7 +10,7 @@ import {
 import { BaseFormatter, FormatTranslation } from "./formatter/BaseFormatter";
 import { BaseLoader } from "./loader/BaseLoader";
 import BaseParser from "./parser/BaseParser";
-import { PathnameUtls } from "./utils/PathnameUtils";
+import BaseUtils, { I18nUtils } from "./utils/BaseUtils";
 
 // cache is its own class
 export type I18nRuntime = {
@@ -24,7 +24,7 @@ export type I18nRuntime = {
   eventCache: Set<string>;
   formatNotFound: (args: NotFoundArgs) => string;
   translateFns: Map<string, FormatTranslation>;
-  utils: PathnameUtls;
+  utils: BaseUtils | null;
 };
 
 export type InnerI18nOpts = {
@@ -42,7 +42,7 @@ export type I18nOpts = {
   parser: BaseParser;
   formatter: BaseFormatter;
 
-  utils?: PathnameUtls;
+  utils?: I18nUtils<BaseUtils>;
 
   // what to initialize current instance to. if not provided fallback locale is used
   currentLocale?: string;
@@ -113,7 +113,7 @@ function createRuntime(opts: I18nOpts, eventOpts: I18nEvents): I18nRuntime {
     eventCache: new Set(),
     formatNotFound:
       opts.formatNotFound || (({ fullyResolvedPath }) => fullyResolvedPath),
-    utils: opts.utils || new PathnameUtls(),
+    utils: (opts.utils as BaseUtils) || null,
     translateFns: new Map<string, FormatTranslation>(),
   };
 }
@@ -133,6 +133,7 @@ export class I18nChain<T extends GenericGeneratedType> {
 
   private _locale: string;
   private _namespace: string;
+  private _utils: BaseUtils | null = null; // some sort of utisl
   // private translateFns =
 
   constructor(
@@ -147,12 +148,20 @@ export class I18nChain<T extends GenericGeneratedType> {
     // need to make sure it is safe
     this._locale = this.getSafeLocale(locale);
     this._namespace = namespace;
+    this._utils =
+      (this.runtime.utils as any)?.clone(
+        this._locale,
+        this.opts,
+        this.runtime
+      ) || null;
   }
 
-  // helper functions exposed here
-  public getLink(url: string) {
-    //
-    return this.runtime.utils.getLink(this.locale, url);
+  get utils(): I18nUtils<BaseUtils> {
+    if (!this._utils) throw new Error("please define utils");
+
+    // then need to create them
+
+    return this._utils as BaseUtils;
   }
 
   // opts some accessors
@@ -190,7 +199,11 @@ export class I18nChain<T extends GenericGeneratedType> {
 
   public setLocale(newLocale: string) {
     const safeLocale = this.getSafeLocale(newLocale);
+
+    if (this._locale == newLocale) return;
     this._locale = safeLocale;
+
+    // TODO reload utils
   }
 
   public async changeLocaleAndReloadTranslations(newLocale: string) {
@@ -209,9 +222,58 @@ export class I18nChain<T extends GenericGeneratedType> {
       translationsToLoad.push(translation);
     }
 
-    this._locale = newLocale;
+    this.setLocale(newLocale);
     return this.loadTranslations(translationsToLoad);
   }
+
+  // TRANSLATING
+
+  private t_internal(locale: string, relativePath: string, args?: TArgs) {
+    const fullyQuantified =
+      (this._namespace ? this._namespace + this.opts.nsSeparator : "") +
+      (relativePath as string);
+
+    const cacheKey = locale + "_" + fullyQuantified;
+
+    const translateFn = this.runtime.translateFns.get(cacheKey);
+
+    if (!translateFn) {
+      const args = {
+        locale,
+        namespace: this._namespace, // TODO,
+        fullyResolvedPath: fullyQuantified,
+      };
+      this.runtime.eventHandler.handleEvent("translationNotFound", args);
+      return this.runtime.formatNotFound(args);
+    }
+
+    return translateFn(args || undefined);
+  }
+
+  public t_locale<Key extends keyof T["this"]>(
+    locale: string,
+    relativePath: Key,
+    args?: T["this"][Key]
+  ) {
+    return this.t_internal(
+      this.getSafeLocale(locale),
+      relativePath as string,
+      args || (undefined as any)
+    );
+  }
+
+  public t<Key extends keyof T["this"]>(
+    relativePath: Key,
+    args?: T["this"][Key]
+  ) {
+    return this.t_internal(
+      this._locale,
+      relativePath as string,
+      args || (undefined as any)
+    );
+  }
+
+  // LOADING
 
   private addTranslationFunctions(
     locale: string,
@@ -281,51 +343,6 @@ export class I18nChain<T extends GenericGeneratedType> {
     return loadPromise;
   }
 
-  private t_internal(locale: string, relativePath: string, args?: TArgs) {
-    const fullyQuantified =
-      (this._namespace ? this._namespace + this.opts.nsSeparator : "") +
-      (relativePath as string);
-
-    const cacheKey = locale + "_" + fullyQuantified;
-
-    const translateFn = this.runtime.translateFns.get(cacheKey);
-
-    if (!translateFn) {
-      const args = {
-        locale,
-        namespace: this._namespace, // TODO,
-        fullyResolvedPath: fullyQuantified,
-      };
-      this.runtime.eventHandler.handleEvent("translationNotFound", args);
-      return this.runtime.formatNotFound(args);
-    }
-
-    return translateFn(args || undefined);
-  }
-
-  public t_locale<Key extends keyof T["this"]>(
-    locale: string,
-    relativePath: Key,
-    args?: T["this"][Key]
-  ) {
-    return this.t_internal(
-      this.getSafeLocale(locale),
-      relativePath as string,
-      args || (undefined as any)
-    );
-  }
-
-  public t<Key extends keyof T["this"]>(
-    relativePath: Key,
-    args?: T["this"][Key]
-  ) {
-    return this.t_internal(
-      this._locale,
-      relativePath as string,
-      args || (undefined as any)
-    );
-  }
-
   public async loadTranslation<Key extends keyof T["others"]>(key: Key) {
     return this.loadSingleTranslation(this.locale, key as string);
   }
@@ -356,6 +373,8 @@ export class I18nChain<T extends GenericGeneratedType> {
 
     return loadRes;
   }
+
+  // OTHERS
 
   public getSubI18n<Key extends keyof T["others"]>(opts: {
     locale: string | undefined | null;

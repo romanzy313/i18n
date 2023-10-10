@@ -4,6 +4,7 @@ import { I18nInstance } from "./I18nInstance";
 import MemLoader from "./loader/MemLoader";
 import ICUFormatter from "./formatter/ICUFormatter";
 import JsonParser from "./parser/JsonParser";
+import BaseUtils from "./utils/BaseUtils";
 
 export type TestGeneratedType = any;
 
@@ -57,6 +58,7 @@ beforeEach(() => {
     events: {
       translationNotFound: notFound, // remove console logging of missing translations
     },
+    utils: new BaseUtils(),
   });
 });
 
@@ -135,5 +137,27 @@ describe("i18n", () => {
 
     expect(i18n.t_locale("en", "default:no")).toBe("no");
     expect(i18n.t_locale("ru", "hello:nested.key")).toBe("привет");
+  });
+
+  test("utils", async () => {
+    i18n.setLocale("en");
+    const numberFormatter = i18n.utils.numberFormat({
+      type: "currency",
+    });
+
+    expect(numberFormatter.format(1_000_000.5)).toBe("1,000,000.5"); // english format
+
+    const ru = i18n.getSubI18n({
+      locale: "ru",
+    });
+
+    const rusFormat = ru.utils
+      .numberFormat({
+        type: "currency",
+      })
+      .format(1_000_000.5); // russian format
+
+    // unicode wierdness https://stackoverflow.com/questions/54242039/intl-numberformat-space-character-does-not-match
+    expect(rusFormat).toEqual("1\xa0000\xa0000,5");
   });
 });
