@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "cp ../../README.md ./README.md && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest --watch"
   },

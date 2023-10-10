@@ -14,7 +14,9 @@ const i18n = new I18nInstance<any>({
   formatNotFound: ({ fullyResolvedPath }) =>
     `*** NOT FOUND ${fullyResolvedPath} ***`,
   events: {
-    translationNotFound: () => {}, // supress it
+    translationNotFound: ({ locale, namespace }) => {
+      console.log("missing translation for", locale, "in", namespace);
+    }, // supress it
   },
 });
 

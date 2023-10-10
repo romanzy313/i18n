@@ -1,8 +1,11 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "out": "./typedoc",
-  "entryPoints": ["packages/*"],
+  "entryPoints": ["packages/lib"],
   "name": "i18n Library Docs",
   "entryPointStrategy": "packages",
-  "includeVersion": true
+  "includeVersion": true,
+
+  // Potentially useful for debugging
+  "logLevel": "Verbose"
 }

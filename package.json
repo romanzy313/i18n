@@ -4,9 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "gen:docs": "pnpm typedoc",
+    "build:lib": "pnpm --filter='./packages/lib' run build"
   },
   "devDependencies": {
     "@types/node": "^20.5.9",

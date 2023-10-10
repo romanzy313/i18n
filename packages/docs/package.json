@@ -10,7 +10,7 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@romanzy/i18n": "workspace:0.0.1",
+    "@romanzy/i18n": "workspace:latest",
     "astro": "^3.1.4"
   }
 }

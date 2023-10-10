@@ -50,23 +50,23 @@ function getLocaleDirection(localeCode: string) {
   }
 }
 
-function getLocaleDirection2(localeCode: string) {
-  try {
-    // Create a Locale object using the provided locale code
-    const locale = new Intl.Locale(localeCode);
+// function getLocaleDirection2(localeCode: string) {
+//   try {
+//     // Create a Locale object using the provided locale code
+//     const locale = new Intl.Locale(localeCode);
 
-    // Check the default numbering system for the locale
-    const numberingSystem = locale.numberingSystem;
+//     // Check the default numbering system for the locale
+//     const numberingSystem = locale.numberingSystem;
 
-    // If the numbering system is Arabic, it's likely RTL
-    if (numberingSystem === "arab") {
-      return "rtl";
-    } else {
-      return "ltr";
-    }
-  } catch (error) {
-    // Handle invalid locale codes or errors
-    console.error(`Invalid locale code: ${localeCode}`);
-    return "ltr"; // Default to LTR in case of errors or invalid input
-  }
-}
+//     // If the numbering system is Arabic, it's likely RTL
+//     if (numberingSystem === "arab") {
+//       return "rtl";
+//     } else {
+//       return "ltr";
+//     }
+//   } catch (error) {
+//     // Handle invalid locale codes or errors
+//     console.error(`Invalid locale code: ${localeCode}`);
+//     return "ltr"; // Default to LTR in case of errors or invalid input
+//   }
+// }
