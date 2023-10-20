@@ -6,7 +6,8 @@ export default defineConfig({
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"),
       name: "simply-i18n",
-      fileName: (format) => `simply-i18n.${format}.js`,
+      // fileName: (format) => `simply-i18n.${format}.js`,
+      fileName: (format) => `index.${format}.js`,
     },
     sourcemap: true,
   },

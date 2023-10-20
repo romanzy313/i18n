@@ -1,16 +1,17 @@
 import { I18nInstance } from "@romanzy/i18n";
-import ICUFormatter from "@romanzy/i18n/src/formatter/ICUFormatter";
-import NodeFsLoader from "@romanzy/i18n/src/loader/NodeFsLoader";
-import JsonParser from "@romanzy/i18n/src/parser/JsonParser";
+import Formatter from "@romanzy/i18n/formatter/ICUFormatter";
+import Loader from "@romanzy/i18n/loader/NodeFsLoader";
+import Parser from "@romanzy/i18n/parser/JsonParser";
+import Utils from "@romanzy/i18n/utils/BaseUtils";
 
 const i18n = new I18nInstance<any>({
   locales: ["en", "ru"],
   fallbackLocale: "en",
-  loader: new NodeFsLoader({
+  loader: new Loader({
     folder: "public/locale",
   }),
-  formatter: new ICUFormatter(),
-  parser: new JsonParser(),
+  formatter: new Formatter(),
+  parser: new Parser(),
   formatNotFound: ({ fullyResolvedPath }) =>
     `*** NOT FOUND ${fullyResolvedPath} ***`,
   events: {
@@ -18,6 +19,7 @@ const i18n = new I18nInstance<any>({
       console.log("missing translation for", locale, "in", namespace);
     }, // supress it
   },
+  utils: Utils,
 });
 
 export default i18n;

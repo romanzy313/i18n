@@ -1,4 +1,4 @@
-import { NestedRawTranslations } from "..";
+import { NestedRawTranslations } from "../types";
 
 export type TParser = (blob: string) => NestedRawTranslations;
 

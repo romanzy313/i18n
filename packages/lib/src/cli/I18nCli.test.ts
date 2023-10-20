@@ -4,7 +4,7 @@ import { I18nInstance } from "../I18nInstance";
 import MemLoader from "../loader/MemLoader";
 import ICUFormatter from "../formatter/ICUFormatter";
 import JsonParser from "../parser/JsonParser";
-import I18nCli from "./I18nCli";
+import { I18nCli } from "./I18nCli";
 import TestTypeGen from "./TestTypeGen";
 
 let i18n: I18nInstance<TestTypeGen>;

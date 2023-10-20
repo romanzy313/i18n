@@ -1,4 +1,2 @@
-export * from "./types";
-export * from "./I18nInstance";
-export * from "./utils/pathname";
-// export  as fetchBackend from "./backend/fetch"
+export { I18nInstance } from "./I18nInstance";
+export type { I18nOpts, I18nChain } from "./I18nInstance";

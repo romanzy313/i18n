@@ -1,11 +1,13 @@
 {
-  "name": "simply-i18n-root",
+  "name": "@romanzy/i18n-monorepo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "gen:docs": "pnpm typedoc",
-    "build:lib": "pnpm --filter='./packages/lib' run build"
+    "build": "pnpm --filter='./packages/lib' run build",
+    "test": "pnpm --filter='./packages/lib' run test",
+    "test:dev": "pnpm --filter='./packages/lib' run test:dev"
   },
   "devDependencies": {
     "@types/node": "^20.5.9",

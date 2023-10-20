@@ -24,7 +24,7 @@ importers:
   packages/docs:
     dependencies:
       '@romanzy/i18n':
-        specifier: workspace:latest
+        specifier: workspace:^
         version: link:../lib
       astro:
         specifier: ^3.1.4

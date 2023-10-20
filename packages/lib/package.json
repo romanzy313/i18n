@@ -4,11 +4,20 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./cli": "./dist/index.js",
+    "./loader/*": "./dist/loader/*.js",
+    "./formatter/*": "./dist/formatter/*.js",
+    "./parser/*": "./dist/parser/*.js",
+    "./utils/*": "./dist/utils/*.js"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "cp ../../README.md ./README.md && tsc && vite build",
-    "preview": "vite preview",
-    "test": "vitest --watch"
+    "build": "rm -rf ./dist && tsc",
+    "build:watch": "tsc --watch",
+    "test": "vitest run",
+    "test:dev": "vitest --watch"
   },
   "devDependencies": {
     "@formatjs/icu-messageformat-parser": "^2.6.1",

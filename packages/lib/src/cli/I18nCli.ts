@@ -19,7 +19,7 @@ type I18nCliOpts = {
   writeFolder: string;
 };
 
-export default class I18nCli {
+export class I18nCli {
   private runtime: I18nRuntime;
   private instanceOtps: InnerI18nOpts;
   constructor(instance: I18nInstance<any, any>, public cliOpts: I18nCliOpts) {
