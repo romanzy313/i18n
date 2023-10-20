@@ -10,8 +10,7 @@ import {
 import { BaseFormatter, FormatTranslation } from "./formatter/BaseFormatter";
 import { BaseLoader } from "./loader/BaseLoader";
 import BaseParser from "./parser/BaseParser";
-import { UtilContext, WrappedUtils } from "./utils/types";
-import { UtilDefinition } from "./utils/types";
+import { UtilDefinition } from "./utils/def";
 
 // cache is its own class
 export type I18nRuntime = {
@@ -35,6 +34,8 @@ export type InnerI18nOpts = {
 
   nsSeparator: string;
   keySeparator: string;
+
+  utils: UtilDefinition | null;
 };
 
 export type I18nOpts<U extends UtilDefinition> = {
@@ -44,6 +45,7 @@ export type I18nOpts<U extends UtilDefinition> = {
   parser: BaseParser;
   formatter: BaseFormatter;
 
+  // utils?: UtilDefinition<U>;
   utils?: U;
 
   // what to initialize current instance to. if not provided fallback locale is used
@@ -67,6 +69,7 @@ function processOpts(opts: I18nOpts<any>): InnerI18nOpts {
     fallbackLocale: opts.fallbackLocale,
     nsSeparator: opts.nsSeparator || ":",
     keySeparator: opts.keySeparator || ".",
+    utils: opts.utils || null,
   };
 }
 
@@ -137,12 +140,14 @@ export class I18nChain<
   T extends GenericGeneratedType,
   U extends UtilDefinition
 > {
-  protected opts: InnerI18nOpts; // public for now
-  protected runtime: I18nRuntime; // public for now
+  public opts: InnerI18nOpts; // should be hidden from the library consumer
+  public runtime: I18nRuntime; // should be hidden from the library consumer
 
   private _locale: string;
   private _namespace: string;
   // private translateFns =
+
+  private utilInstance: InstanceType<U> | null = null;
 
   constructor(
     opts: InnerI18nOpts,
@@ -156,36 +161,17 @@ export class I18nChain<
     // need to make sure it is safe
     this._locale = this.getSafeLocale(locale);
     this._namespace = namespace;
+
+    if (opts.utils)
+      //@ts-expect-error class types are a pain in ts
+      this.utilInstance = new opts.utils(opts, runtime, locale, namespace);
   }
 
-  // TODO optimize this with cache using objectToHash
-  get utils(): WrappedUtils<U> {
-    const utils = this.runtime.utils as any;
-    if (!utils) throw new Error("Define utils to use them");
+  get utils(): InstanceType<U> {
+    if (!this.utilInstance)
+      throw new Error("Define util when constructing to use it");
 
-    const wrapper: Record<string, (...args: any[]) => any> = {};
-
-    const ctx: UtilContext = {
-      locale: this._locale,
-      options: this.opts,
-      runtime: this.runtime,
-    };
-
-    const keys = Object.getOwnPropertyNames(Object.getPrototypeOf(utils));
-
-    keys.forEach((key) => {
-      if (key == "constructor") return;
-
-      if (typeof utils[key] === "function") {
-        const originalFunc = utils[key].bind(utils);
-        const wrappedFunc: (...args: any[]) => any = (...args) => {
-          return originalFunc(ctx, ...args);
-        };
-        wrapper[key] = wrappedFunc;
-      }
-    });
-
-    return wrapper as WrappedUtils<U>;
+    return this.utilInstance;
   }
 
   // opts some accessors

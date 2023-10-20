@@ -17,7 +17,7 @@
     "build": "rm -rf ./dist && tsc",
     "build:watch": "tsc --watch",
     "test": "vitest run",
-    "test:dev": "vitest --watch"
+    "test:watch": "vitest --watch"
   },
   "devDependencies": {
     "@formatjs/icu-messageformat-parser": "^2.6.1",

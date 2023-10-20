@@ -22,10 +22,11 @@ type I18nCliOpts = {
 export class I18nCli {
   private runtime: I18nRuntime;
   private instanceOtps: InnerI18nOpts;
-  constructor(instance: I18nInstance<any, any>, public cliOpts: I18nCliOpts) {
-    // @ts-expect-error
+  constructor(
+    protected instance: I18nInstance,
+    protected cliOptions: I18nCliOpts
+  ) {
     this.runtime = instance.runtime;
-    // @ts-expect-error
     this.instanceOtps = instance.opts;
   }
 
@@ -70,7 +71,7 @@ export class I18nCli {
     );
 
     const full = renderGeneratedType(
-      this.cliOpts.name,
+      this.cliOptions.name,
       this.instanceOtps.nsSeparator,
       batchProcessed.map((v) => {
         return {
@@ -88,8 +89,8 @@ export class I18nCli {
   }
 
   async flushToDisk(value: string) {
-    const folder = path.resolve(this.cliOpts.writeFolder);
-    const dest = path.join(folder, `${this.cliOpts.name}.ts`);
+    const folder = path.resolve(this.cliOptions.writeFolder);
+    const dest = path.join(folder, `${this.cliOptions.name}.ts`);
 
     await fs.writeFile(dest, value);
   }

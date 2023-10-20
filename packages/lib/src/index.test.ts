@@ -4,9 +4,9 @@ import { I18nInstance } from "./I18nInstance";
 import MemLoader from "./loader/MemLoader";
 import ICUFormatter from "./formatter/ICUFormatter";
 import JsonParser from "./parser/JsonParser";
-import BaseUtils from "./utils/BaseUtils";
+import Utils from "./utils/BaseUtils";
 
-let i18n: I18nInstance<any, any>;
+let i18n: I18nInstance<any, typeof Utils>;
 let notFound = vi.fn();
 
 beforeEach(() => {
@@ -46,7 +46,7 @@ beforeEach(() => {
     },
   });
 
-  i18n = new I18nInstance<any, BaseUtils>({
+  i18n = new I18nInstance({
     locales: ["en", "ru"],
     fallbackLocale: "en",
     loader,
@@ -56,7 +56,7 @@ beforeEach(() => {
     events: {
       translationNotFound: notFound, // remove console logging of missing translations
     },
-    utils: new BaseUtils(),
+    utils: Utils,
   });
 
   // i18n2.utils.

@@ -4,7 +4,7 @@ import Loader from "@romanzy/i18n/loader/NodeFsLoader";
 import Parser from "@romanzy/i18n/parser/JsonParser";
 import Utils from "@romanzy/i18n/utils/BaseUtils";
 
-const i18n = new I18nInstance<any>({
+const i18n = new I18nInstance({
   locales: ["en", "ru"],
   fallbackLocale: "en",
   loader: new Loader({
