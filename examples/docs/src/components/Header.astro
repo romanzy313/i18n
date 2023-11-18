@@ -1,0 +1,22 @@
+---
+import i18n from "../i18n"
+
+const otherLocales = i18n.allLocales;
+
+---
+
+<div class="main">
+  <a href={`/${i18n.locale}`} class="disabled">{i18n.locale}</a>
+  {otherLocales.map((locale) => <a href={`/${locale}`}>{locale}</a>)}
+</div>
+
+<style>
+  .main {
+    display: flex;
+    gap: 1rem;
+  }
+  .disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+</style>
