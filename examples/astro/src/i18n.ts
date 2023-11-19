@@ -1,12 +1,12 @@
 import { I18nInstance } from "@romanzy/i18n";
 import Formatter from "@romanzy/i18n/formatter/ICUFormatter";
-import Loader from "@romanzy/i18n/loader/NodeFsLoader";
+import Loader from "@romanzy/i18n/loader/FsLoader";
 import Parser from "@romanzy/i18n/parser/JsonParser";
 import Utils from "@romanzy/i18n/utils/BaseUtils";
 
 const i18n = new I18nInstance({
   locales: ["en", "ru"],
-  fallbackLocale: "en",
+  defaultLocale: "en",
   loader: new Loader({
     folder: "public/locale",
   }),

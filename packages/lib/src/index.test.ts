@@ -48,7 +48,7 @@ beforeEach(() => {
 
   i18n = new I18nInstance({
     locales: ["en", "ru"],
-    fallbackLocale: "en",
+    defaultLocale: "en",
     loader,
     formatter: new ICUFormatter(),
     parser: new JsonParser(),
@@ -126,7 +126,7 @@ describe("i18n", () => {
     expect(i18n.t_locale("en", "hello:nested.key")).toBe("hello");
     expect(i18n.t_locale("ru", "default:no")).toBe("***not found***");
 
-    await i18n.changeLocaleAndReloadTranslations("ru");
+    await i18n.setLocaleAndReloadTranslations("ru");
     expect(i18n.t_locale("ru", "default:no")).toBe("нет");
     expect(i18n.t_locale("ru", "hello:nested.key")).toBe("привет");
   });

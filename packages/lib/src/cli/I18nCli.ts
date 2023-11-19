@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { I18nInstance, I18nRuntime, InnerI18nOpts } from "../I18nInstance";
-import { ListResult } from "../loader/BaseLoader";
+import { ListResult } from "../bases/BaseLoader";
 import { renderGeneratedType } from "./generateFns";
 
 type KeyExpandResult = {
@@ -64,7 +64,7 @@ export class I18nCli {
     const loader = this.runtime.loader;
     let items = await loader.list();
 
-    items = items.filter((v) => v.locale !== this.instanceOtps.fallbackLocale);
+    items = items.filter((v) => v.locale !== this.instanceOtps.defaultLocale);
 
     const batchProcessed = await Promise.all(
       items.map(this.processTranslation.bind(this))

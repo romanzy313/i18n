@@ -7,10 +7,10 @@ import {
   I18nEvents,
   NotFoundArgs,
 } from "./EventHandler";
-import { BaseFormatter, FormatTranslation } from "./formatter/BaseFormatter";
-import { BaseLoader } from "./loader/BaseLoader";
-import BaseParser from "./parser/BaseParser";
+import { BaseFormatter, FormatTranslation } from "./bases/BaseFormatter";
+import BaseParser from "./bases/BaseParser";
 import { UtilDefinition } from "./utils/def";
+import { BaseLoader } from "./bases/BaseLoader";
 
 // cache is its own class
 export type I18nRuntime = {
@@ -30,7 +30,7 @@ export type I18nRuntime = {
 
 export type InnerI18nOpts = {
   locales: string[];
-  fallbackLocale: string;
+  defaultLocale: string;
 
   nsSeparator: string;
   keySeparator: string;
@@ -40,7 +40,7 @@ export type InnerI18nOpts = {
 
 export type I18nOpts<U extends UtilDefinition> = {
   locales: string[];
-  fallbackLocale: string;
+  defaultLocale: string;
   loader: BaseLoader;
   parser: BaseParser;
   formatter: BaseFormatter;
@@ -66,7 +66,7 @@ export type I18nOpts<U extends UtilDefinition> = {
 function processOpts(opts: I18nOpts<any>): InnerI18nOpts {
   return {
     locales: opts.locales,
-    fallbackLocale: opts.fallbackLocale,
+    defaultLocale: opts.defaultLocale,
     nsSeparator: opts.nsSeparator || ":",
     keySeparator: opts.keySeparator || ".",
     utils: opts.utils || null,
@@ -192,8 +192,11 @@ export class I18nChain<
   get allLocales(): string[] {
     return this.opts.locales;
   }
-  get fallbackLocale(): string {
-    return this.opts.fallbackLocale;
+  get otherLocales(): string[] {
+    return this.opts.locales.filter((locale) => locale != this._locale);
+  }
+  get defaultLocale(): string {
+    return this.opts.defaultLocale;
   }
 
   public getSafeLocale(locale: string | undefined | null) {
@@ -204,7 +207,7 @@ export class I18nChain<
         locale: locale || "undefined",
       });
     }
-    return isOk ? locale : this.opts.fallbackLocale;
+    return isOk ? locale : this.opts.defaultLocale;
   }
 
   public setLocale(newLocale: string) {
@@ -216,7 +219,7 @@ export class I18nChain<
     // TODO reload utils
   }
 
-  public async changeLocaleAndReloadTranslations(newLocale: string) {
+  public async setLocaleAndReloadTranslations(newLocale: string) {
     newLocale = this.getSafeLocale(newLocale);
     const oldLocale = this._locale;
 
@@ -430,7 +433,7 @@ export class I18nInstance<
 > extends I18nChain<T, U> {
   constructor(opts: I18nOpts<U>) {
     // do some preliminary checks
-    if (!opts.locales.includes(opts.fallbackLocale))
+    if (!opts.locales.includes(opts.defaultLocale))
       throw new Error("fallback locale must be define in locales");
 
     // this makes a full copy
@@ -441,7 +444,7 @@ export class I18nInstance<
     const startLocale =
       opts.currentLocale && opts.locales.includes(opts.currentLocale)
         ? opts.currentLocale
-        : opts.fallbackLocale;
+        : opts.defaultLocale;
     // start the intiial copy
     super(innerOpts, runtime, startLocale, "");
   }

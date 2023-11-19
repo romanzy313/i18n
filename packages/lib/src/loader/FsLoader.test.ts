@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import NodeFsLoader from "./NodeFsLoader";
+import NodeFsLoader from "./FsLoader";
 
 describe("Node Fs Loader", () => {
   test("loads correctly", async () => {

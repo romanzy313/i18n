@@ -1,7 +1,7 @@
 // import {parse} from '@formatjs/icu-messageformat-parser'
 
 import IntlMessageFormat from "intl-messageformat";
-import { BaseFormatter, FormatTranslation } from "./BaseFormatter";
+import { BaseFormatter, FormatTranslation } from "../bases/BaseFormatter";
 
 export default class UCIFormatter extends BaseFormatter {
   getType(rawValue: string, locale: string): Record<string, any> {

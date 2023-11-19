@@ -48,7 +48,7 @@ beforeEach(() => {
 
   i18n = new I18nInstance<TestTypeGen>({
     locales: ["en", "ru"],
-    fallbackLocale: "en",
+    defaultLocale: "en",
     nsSeparator: ":",
     keySeparator: ".",
     loader,

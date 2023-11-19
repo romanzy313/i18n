@@ -1,5 +1,5 @@
 import { NestedRawTranslations } from "../types";
-import BaseParser from "./BaseParser";
+import BaseParser from "../bases/BaseParser";
 
 export default class JsonParser extends BaseParser {
   extension = "json";

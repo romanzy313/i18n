@@ -21,7 +21,7 @@ importers:
         specifier: ^4.4.5
         version: 4.4.9(@types/node@20.5.9)
 
-  examples/astro:
+  examples/docs:
     dependencies:
       '@romanzy/i18n':
         specifier: workspace:^

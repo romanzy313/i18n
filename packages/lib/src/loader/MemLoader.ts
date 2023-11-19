@@ -1,5 +1,5 @@
 import { I18nError } from "../I18nError";
-import { BaseLoader, ListResult } from "./BaseLoader";
+import { BaseLoader, ListResult } from "../bases/BaseLoader";
 
 type TranslationValue = Record<string, any>; // really a recursive type with string leafs
 

@@ -1,4 +1,4 @@
-import { BaseLoader, ListResult } from "./BaseLoader";
+import { BaseLoader, ListResult } from "../bases/BaseLoader";
 import path from "path";
 import fs from "fs/promises";
 import {
@@ -20,7 +20,7 @@ export type NodeFsLoaderOptions = {
   folder: string;
 };
 
-export default class NodeFsLoader extends BaseLoader {
+export default class FsLoader extends BaseLoader {
   private rootDir: string;
   private formatPath: InterpolatePathFn;
   private folder: string;
