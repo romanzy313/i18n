@@ -1,5 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
+import SvelteApp from "../../svelte/SvelteApp.svelte"
+import "@picocss/pico/css/pico.css"
 
 export async function getStaticPaths() {
   return [{ params: { locale: "en" } }, { params: { locale: "ru" } }];
@@ -16,7 +18,10 @@ await ns.loadRootScopeTranslation();
 ---
 
 <Layout title={ns.t("title")}>
-  <main>
-    <div>{ns.t("welcome")}</div>
+  <main class="container">
+    <h1>{ns.t("welcome")}</h1>
+    <h3>Apps below</h3>
+    
+    <SvelteApp client:only></SvelteApp>
   </main>
 </Layout>

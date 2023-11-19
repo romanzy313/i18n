@@ -10,7 +10,10 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/svelte": "^4.0.4",
+    "@picocss/pico": "2.0.0-alpha1",
     "@romanzy/i18n": "workspace:^",
-    "astro": "^3.1.4"
+    "astro": "^3.1.4",
+    "svelte": "^4.0.5"
   }
 }

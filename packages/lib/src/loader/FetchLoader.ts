@@ -1,11 +1,5 @@
 import { BaseLoader, ListResult } from "../bases/BaseLoader";
-import path from "path";
-import fs from "fs/promises";
-import {
-  InterpolatePathFn,
-  makeMinDeinterpolator,
-  makePathInterpolator,
-} from "../internalUtils";
+import { InterpolatePathFn, makePathInterpolator } from "../internalUtils";
 import { I18nError } from "../I18nError";
 
 export type FetchLoaderOptions = {
@@ -44,7 +38,7 @@ export default class FsLoader extends BaseLoader {
 
       if (!rawContent.ok)
         throw new Error(
-          `Bad response for ${webUrl} with status code ${rawContent.status}`
+          `Bad fetch response for ${webUrl} with status code ${rawContent.status}`
         );
 
       //   fs.readFile(completePath, "utf8");

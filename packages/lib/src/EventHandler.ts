@@ -62,6 +62,8 @@ export class I18nEventHandler {
 
     if (this.eventCache.has(cacheKey)) return;
 
+    console.log("handling event of type", type, "with value", value);
+
     // the handler below deals with all sideeffects, by default hardcoded to console.logs
     // @ts-expect-error
     this.handler[type](value);
